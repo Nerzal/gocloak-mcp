@@ -3,6 +3,7 @@ package keycloak
 import (
 	"context"
 	"math"
+	"time"
 
 	"github.com/Nerzal/gocloak/v14"
 )
@@ -87,12 +88,12 @@ func validateEventFilter(filter *EventFilter) error {
 	if err := validateFilterSlice(filter.Type); err != nil {
 		return err
 	}
-	for _, value := range [...]string{filter.Client, filter.UserID, filter.DateFrom, filter.DateTo} {
+	for _, value := range [...]string{filter.Client, filter.UserID} {
 		if err := validateFilterString(value); err != nil {
 			return err
 		}
 	}
-	return nil
+	return validateDateRange(filter.DateFrom, filter.DateTo)
 }
 
 func validateAdminEventFilter(filter *AdminEventFilter) error {
@@ -105,9 +106,19 @@ func validateAdminEventFilter(filter *AdminEventFilter) error {
 	if err := validateFilterSlice(filter.ResourceTypes); err != nil {
 		return err
 	}
-	for _, value := range [...]string{filter.ResourcePath, filter.DateFrom, filter.DateTo} {
-		if err := validateFilterString(value); err != nil {
-			return err
+	if err := validateFilterString(filter.ResourcePath); err != nil {
+		return err
+	}
+	return validateDateRange(filter.DateFrom, filter.DateTo)
+}
+
+func validateDateRange(dateFrom, dateTo string) error {
+	for _, value := range [...]string{dateFrom, dateTo} {
+		if value == "" {
+			continue
+		}
+		if _, err := time.Parse("2006-01-02", value); err != nil {
+			return errInvalidFilter
 		}
 	}
 	return nil

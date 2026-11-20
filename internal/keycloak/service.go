@@ -153,20 +153,32 @@ func validatePagination(first, pageSize int) error {
 	return nil
 }
 
+const maxOutputFieldLen = 512
+
 func validateIdentifier(value string) error {
 	trimmed := strings.TrimSpace(value)
-	if trimmed == "" || len(trimmed) > maxIdentifier || trimmed == "." || trimmed == ".." ||
-		strings.ContainsAny(trimmed, "/\\?#\r\n") {
+	if trimmed == "" || value != trimmed || len(trimmed) > maxIdentifier ||
+		trimmed == "." || trimmed == ".." ||
+		strings.ContainsAny(trimmed, "/\\?#%") || hasControlChar(trimmed) {
 		return errInvalidID
 	}
 	return nil
 }
 
 func validateFilterString(value string) error {
-	if len(value) > maxFilterLength || strings.ContainsAny(value, "\r\n") {
+	if len(value) > maxFilterLength || hasControlChar(value) {
 		return errInvalidFilter
 	}
 	return nil
+}
+
+func hasControlChar(s string) bool {
+	for i := range len(s) {
+		if s[i] < 0x20 || s[i] == 0x7f {
+			return true
+		}
+	}
+	return false
 }
 
 func validateFilterSlice(values []string) error {
@@ -192,7 +204,46 @@ func derefString(ptr *string) string {
 	if ptr == nil {
 		return ""
 	}
-	return *ptr
+	return sanitizeOutputString(*ptr, maxOutputFieldLen)
+}
+
+func sanitizeOutputString(s string, maxLen int) string {
+	if isCleanShortString(s, maxLen) {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(min(len(s), maxLen))
+	count := 0
+	for _, r := range s {
+		if isUnsafeOutputRune(r) {
+			continue
+		}
+		if count >= maxLen {
+			break
+		}
+		b.WriteRune(r)
+		count++
+	}
+	return b.String()
+}
+
+func isCleanShortString(s string, maxLen int) bool {
+	if len(s) > maxLen {
+		return false
+	}
+	for _, r := range s {
+		if isUnsafeOutputRune(r) {
+			return false
+		}
+	}
+	return true
+}
+
+func isUnsafeOutputRune(r rune) bool {
+	if (r < 0x20 && r != '\t') || r == 0x7f {
+		return true
+	}
+	return (r >= 0x202A && r <= 0x202E) || (r >= 0x2066 && r <= 0x2069)
 }
 
 func derefBool(ptr *bool) bool {

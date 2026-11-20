@@ -60,7 +60,7 @@ func serve(ctx context.Context, server *mcp.Server, cfg *config.Config, logger *
 }
 
 func serveHTTP(ctx context.Context, server *mcp.Server, cfg *config.Config, logger *slog.Logger) error {
-	httpSrv := mcpserver.NewHTTPServer(server, cfg.HTTPAddr, cfg.HTTPBearerToken, logger)
+	httpSrv := mcpserver.NewHTTPServer(server, cfg.HTTPAddr, cfg.HTTPBearerToken, cfg.HTTPAllowedOrigins, logger)
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- httpSrv.ListenAndServe()

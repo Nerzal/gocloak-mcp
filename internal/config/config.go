@@ -29,15 +29,16 @@ var realmPattern = regexp.MustCompile(`^[A-Za-z0-9._-]{1,255}$`)
 
 // Config contains the validated Keycloak connection and MCP transport settings.
 type Config struct {
-	KeycloakURL     string
-	Realm           string
-	AllowedRealms   []string
-	ClientID        string
-	ClientSecret    string
-	RequestTimeout  time.Duration
-	Transport       string
-	HTTPAddr        string
-	HTTPBearerToken string
+	KeycloakURL        string
+	Realm              string
+	AllowedRealms      []string
+	ClientID           string
+	ClientSecret       string
+	RequestTimeout     time.Duration
+	Transport          string
+	HTTPAddr           string
+	HTTPBearerToken    string
+	HTTPAllowedOrigins []string
 }
 
 // String returns a redacted representation of Config so secrets are not leaked via fmt.
@@ -71,14 +72,15 @@ func (c Config) LogValue() slog.Value {
 // Load reads and validates configuration from the process environment.
 func Load() (Config, error) {
 	cfg := Config{
-		KeycloakURL:     os.Getenv("KEYCLOAK_URL"),
-		Realm:           os.Getenv("KEYCLOAK_REALM"),
-		ClientID:        os.Getenv("KEYCLOAK_CLIENT_ID"),
-		ClientSecret:    os.Getenv("KEYCLOAK_CLIENT_SECRET"),
-		RequestTimeout:  defaultRequestTimeout,
-		Transport:       envOrDefault("MCP_TRANSPORT", defaultTransport),
-		HTTPAddr:        envOrDefault("MCP_HTTP_ADDR", defaultHTTPAddr),
-		HTTPBearerToken: os.Getenv("MCP_HTTP_BEARER_TOKEN"),
+		KeycloakURL:        os.Getenv("KEYCLOAK_URL"),
+		Realm:              os.Getenv("KEYCLOAK_REALM"),
+		ClientID:           os.Getenv("KEYCLOAK_CLIENT_ID"),
+		ClientSecret:       os.Getenv("KEYCLOAK_CLIENT_SECRET"),
+		RequestTimeout:     defaultRequestTimeout,
+		Transport:          envOrDefault("MCP_TRANSPORT", defaultTransport),
+		HTTPAddr:           envOrDefault("MCP_HTTP_ADDR", defaultHTTPAddr),
+		HTTPBearerToken:    strings.TrimSpace(os.Getenv("MCP_HTTP_BEARER_TOKEN")),
+		HTTPAllowedOrigins: parseCommaList(os.Getenv("MCP_HTTP_ALLOWED_ORIGINS")),
 	}
 
 	if err := parseTimeoutEnv(&cfg); err != nil {
@@ -89,6 +91,20 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	return cfg, nil
+}
+
+func parseCommaList(raw string) []string {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }
 
 func envOrDefault(key, fallback string) string {

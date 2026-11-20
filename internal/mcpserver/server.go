@@ -82,20 +82,28 @@ func executeTool[T any](
 	fn func(context.Context) (T, error),
 ) (*mcp.CallToolResult, T, error) {
 	var zero T
+	started := time.Now()
 	requestCtx, cancel := context.WithTimeout(ctx, deps.timeout)
 	defer cancel()
 	result, err := fn(requestCtx)
+	durationMS := time.Since(started).Milliseconds()
 	if err != nil {
-		logToolFailure(deps.logger, toolName)
+		auditToolCall(deps.logger, toolName, "error", durationMS)
 		return nil, zero, errors.New("keycloak request failed")
 	}
+	auditToolCall(deps.logger, toolName, "ok", durationMS)
 	return nil, result, nil
 }
 
-func logToolFailure(logger *slog.Logger, tool string) {
-	if logger != nil {
-		logger.Warn("keycloak tool request failed", "tool", tool)
+func auditToolCall(logger *slog.Logger, tool, outcome string, durationMS int64) {
+	if logger == nil {
+		return
 	}
+	if outcome != "ok" {
+		logger.Warn("mcp tool invoked", "tool", tool, "outcome", outcome, "duration_ms", durationMS)
+		return
+	}
+	logger.Info("mcp tool invoked", "tool", tool, "outcome", outcome, "duration_ms", durationMS)
 }
 
 func sanitizeErr(err error) error {
