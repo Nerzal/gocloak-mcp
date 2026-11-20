@@ -1,4 +1,4 @@
-// Package mcpserver registers the read-only Keycloak MCP tools.
+// Package mcpserver registers the read-only Keycloak MCP tools and transports.
 package mcpserver
 
 import (
@@ -19,10 +19,10 @@ const (
 )
 
 // Service is the read-only Keycloak service required by the MCP handlers.
-type Service interface {
-	ListUsers(context.Context, int, int) ([]keycloak.User, error)
-	ListClients(context.Context, int, int) ([]keycloak.ClientInfo, error)
-	GetRealmInfo(context.Context) (keycloak.RealmInfo, error)
+type Service = keycloak.Service
+
+type realmInput struct {
+	Realm string `json:"realm,omitempty" jsonschema:"optional target realm; defaults to configured KEYCLOAK_REALM and must be in KEYCLOAK_ALLOWED_REALMS"`
 }
 
 type pageInput struct {
@@ -30,50 +30,40 @@ type pageInput struct {
 	Max   *int `json:"max,omitempty" jsonschema:"page size between 1 and 100; defaults to 50"`
 }
 
-type usersOutput struct {
-	Users []keycloak.User `json:"users"`
+type countOutput struct {
+	Count int `json:"count"`
 }
 
-type clientsOutput struct {
-	Clients []keycloak.ClientInfo `json:"clients"`
+type toolDeps struct {
+	service     Service
+	timeout     time.Duration
+	logger      *slog.Logger
+	annotations *mcp.ToolAnnotations
 }
 
-// New constructs the MCP server and registers the three read-only tools.
+// New constructs the MCP server and registers all read-only Keycloak tools.
 func New(service Service, timeout time.Duration, logger *slog.Logger) *mcp.Server {
 	if timeout <= 0 {
 		timeout = defaultRequestTimeout
 	}
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    "gocloak-mcp",
-		Version: "0.1.0",
+		Version: "0.2.0",
 	}, &mcp.ServerOptions{Logger: logger})
-	registerTools(server, service, timeout, logger)
-	return server
-}
 
-func registerTools(server *mcp.Server, service Service, timeout time.Duration, logger *slog.Logger) {
-	annotations := readOnlyAnnotations()
-	mcp.AddTool(server, &mcp.Tool{
-		Name:        "list_users",
-		Description: "List users in the configured Keycloak realm.",
-		Annotations: annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, input pageInput) (*mcp.CallToolResult, usersOutput, error) {
-		return listUsers(ctx, service, timeout, logger, input)
-	})
-	mcp.AddTool(server, &mcp.Tool{
-		Name:        "list_clients",
-		Description: "List clients in the configured Keycloak realm.",
-		Annotations: annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, input pageInput) (*mcp.CallToolResult, clientsOutput, error) {
-		return listClients(ctx, service, timeout, logger, input)
-	})
-	mcp.AddTool(server, &mcp.Tool{
-		Name:        "get_realm_info",
-		Description: "Get basic information about the configured Keycloak realm.",
-		Annotations: annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, keycloak.RealmInfo, error) {
-		return getRealmInfo(ctx, service, timeout, logger)
-	})
+	deps := toolDeps{
+		service:     service,
+		timeout:     timeout,
+		logger:      logger,
+		annotations: readOnlyAnnotations(),
+	}
+	registerUserTools(server, deps)
+	registerClientTools(server, deps)
+	registerRoleTools(server, deps)
+	registerGroupTools(server, deps)
+	registerRealmTools(server, deps)
+	registerAuthIDPOrgTools(server, deps)
+	return server
 }
 
 func readOnlyAnnotations() *mcp.ToolAnnotations {
@@ -85,51 +75,34 @@ func readOnlyAnnotations() *mcp.ToolAnnotations {
 	}
 }
 
-func listUsers(ctx context.Context, service Service, timeout time.Duration, logger *slog.Logger, input pageInput) (*mcp.CallToolResult, usersOutput, error) {
-	first, pageSize, err := validatePage(input)
-	if err != nil {
-		return nil, usersOutput{}, err
-	}
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
+func executeTool[T any](
+	ctx context.Context,
+	deps toolDeps,
+	toolName string,
+	fn func(context.Context) (T, error),
+) (*mcp.CallToolResult, T, error) {
+	var zero T
+	requestCtx, cancel := context.WithTimeout(ctx, deps.timeout)
 	defer cancel()
-	users, err := service.ListUsers(requestCtx, first, pageSize)
+	result, err := fn(requestCtx)
 	if err != nil {
-		logToolFailure(logger, "list_users")
-		return nil, usersOutput{}, errors.New("keycloak request failed")
+		logToolFailure(deps.logger, toolName)
+		return nil, zero, errors.New("keycloak request failed")
 	}
-	return nil, usersOutput{Users: users}, nil
-}
-
-func listClients(ctx context.Context, service Service, timeout time.Duration, logger *slog.Logger, input pageInput) (*mcp.CallToolResult, clientsOutput, error) {
-	first, pageSize, err := validatePage(input)
-	if err != nil {
-		return nil, clientsOutput{}, err
-	}
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	clients, err := service.ListClients(requestCtx, first, pageSize)
-	if err != nil {
-		logToolFailure(logger, "list_clients")
-		return nil, clientsOutput{}, errors.New("keycloak request failed")
-	}
-	return nil, clientsOutput{Clients: clients}, nil
-}
-
-func getRealmInfo(ctx context.Context, service Service, timeout time.Duration, logger *slog.Logger) (*mcp.CallToolResult, keycloak.RealmInfo, error) {
-	requestCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	realm, err := service.GetRealmInfo(requestCtx)
-	if err != nil {
-		logToolFailure(logger, "get_realm_info")
-		return nil, keycloak.RealmInfo{}, errors.New("keycloak request failed")
-	}
-	return nil, realm, nil
+	return nil, result, nil
 }
 
 func logToolFailure(logger *slog.Logger, tool string) {
 	if logger != nil {
 		logger.Warn("keycloak tool request failed", "tool", tool)
 	}
+}
+
+func sanitizeErr(err error) error {
+	if err != nil {
+		return errors.New("keycloak request failed")
+	}
+	return nil
 }
 
 func validatePage(input pageInput) (first, pageSize int, err error) {

@@ -22,6 +22,8 @@ import (
 	"github.com/Nerzal/gocloak-mcp/internal/mcpserver"
 )
 
+const httpShutdownTimeout = 5 * time.Second
+
 func main() {
 	logger := logging.New()
 	if err := run(logger); err != nil {
@@ -36,13 +38,20 @@ func run(logger *slog.Logger) error {
 		return errors.New("invalid configuration")
 	}
 
-	client := newKeycloakClient(cfg)
+	client := newKeycloakClient(&cfg)
 	tokenProvider := keycloak.NewTokenProvider(client, cfg.Realm, cfg.ClientID, cfg.ClientSecret, cfg.RequestTimeout)
-	service := keycloak.NewService(client, tokenProvider, cfg.Realm)
+	service := keycloak.NewService(client, tokenProvider, cfg.Realm, cfg.AllowedRealms)
 	server := mcpserver.New(service, cfg.RequestTimeout, logger)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	return serve(ctx, server, &cfg, logger)
+}
+
+func serve(ctx context.Context, server *mcp.Server, cfg *config.Config, logger *slog.Logger) error {
+	if cfg.Transport == config.TransportHTTP {
+		return serveHTTP(ctx, server, cfg, logger)
+	}
 	if err := server.Run(ctx, &mcp.StdioTransport{}); err != nil && ctx.Err() == nil {
 		logger.Error("MCP server stopped")
 		return errors.New("MCP server stopped")
@@ -50,7 +59,30 @@ func run(logger *slog.Logger) error {
 	return nil
 }
 
-func newKeycloakClient(cfg config.Config) *gocloak.GoCloak {
+func serveHTTP(ctx context.Context, server *mcp.Server, cfg *config.Config, logger *slog.Logger) error {
+	httpSrv := mcpserver.NewHTTPServer(server, cfg.HTTPAddr, cfg.HTTPBearerToken, logger)
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- httpSrv.ListenAndServe()
+	}()
+	logger.Info("MCP Streamable HTTP server listening", "addr", cfg.HTTPAddr)
+
+	select {
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), httpShutdownTimeout)
+		defer cancel()
+		_ = httpSrv.Shutdown(shutdownCtx)
+		return nil
+	case err := <-errCh:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error("MCP HTTP server stopped")
+			return errors.New("MCP HTTP server stopped")
+		}
+		return nil
+	}
+}
+
+func newKeycloakClient(cfg *config.Config) *gocloak.GoCloak {
 	client := gocloak.NewClient(cfg.KeycloakURL)
 	client.RestyClient().GetClient().CheckRedirect = rejectRedirects
 	client.RestyClient().

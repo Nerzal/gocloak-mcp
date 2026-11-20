@@ -30,7 +30,7 @@ func TestNewHTTPTransportHardening(t *testing.T) {
 }
 
 func TestNewKeycloakClientBlocksRedirects(t *testing.T) {
-	client := newKeycloakClient(config.Config{
+	client := newKeycloakClient(&config.Config{
 		KeycloakURL:    "https://keycloak.example.test",
 		Realm:          "example",
 		ClientID:       "mcp",
