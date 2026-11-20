@@ -13,14 +13,14 @@ import (
 func TestOWASP_MCP01_SecretExposureBlockedInDTOs(t *testing.T) {
 	ctx := context.Background()
 	const (
-		clientSecret = "super-secret-client-credential"
-		idpSecret    = "oidc-idp-client-secret-value"
-		adminSecret  = "raw-admin-event-password-hash"
+		clientMarker = "redacted-client-fixture-1"
+		idpMarker    = "redacted-idp-fixture-2"
+		adminMarker  = "redacted-admin-fixture-3"
 	)
 	svc := NewService(&stubClient{
-		clients:     []*gocloak.Client{{ID: strP("c1"), ClientID: strP("web"), Secret: strP(clientSecret)}},
-		idps:        []*gocloak.IdentityProviderRepresentation{{Alias: strP("okta"), Config: map[string]string{"clientSecret": idpSecret}}},
-		adminEvents: []*gocloak.AdminEventRepresentation{{OperationType: strP("CREATE"), Representation: strP(adminSecret)}},
+		clients:     []*gocloak.Client{{ID: strP("c1"), ClientID: strP("web"), Secret: strP(clientMarker)}},
+		idps:        []*gocloak.IdentityProviderRepresentation{{Alias: strP("okta"), Config: map[string]string{"clientSecret": idpMarker}}},
+		adminEvents: []*gocloak.AdminEventRepresentation{{OperationType: strP("CREATE"), Representation: strP(adminMarker)}},
 	}, &stubTokenProvider{}, "prod", []string{"prod"})
 
 	clients, err := svc.ListClients(ctx, "prod", 0, 10, ClientFilter{})
@@ -33,9 +33,9 @@ func TestOWASP_MCP01_SecretExposureBlockedInDTOs(t *testing.T) {
 	payload, err := json.Marshal(map[string]any{"clients": clients, "idps": idps, "events": events})
 	requireOK(t, err, "json.Marshal")
 	body := string(payload)
-	for _, secret := range []string{clientSecret, idpSecret, adminSecret} {
-		if strings.Contains(body, secret) {
-			t.Fatalf("serialized DTO leaked secret %q: %s", secret, body)
+	for _, marker := range []string{clientMarker, idpMarker, adminMarker} {
+		if strings.Contains(body, marker) {
+			t.Fatalf("serialized DTO leaked fixture marker %q: %s", marker, body)
 		}
 	}
 }

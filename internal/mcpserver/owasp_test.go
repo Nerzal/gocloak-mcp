@@ -15,8 +15,8 @@ import (
 
 func TestOWASP_MCP01_ToolErrorsNeverLeakTokensOrBodies(t *testing.T) {
 	ctx := context.Background()
-	const leakedToken = "eyJhbGciOiJSUzI1NiJ9.secret-payload"
-	session, cleanup := connectInMemory(t, &stubService{err: errors.New("HTTP 500 Authorization: Bearer " + leakedToken)}, nil)
+	const sensitiveMarker = "eyJhbGciOiJSUzI1NiJ9.fixture-payload"
+	session, cleanup := connectInMemory(t, &stubService{err: errors.New("HTTP 500 Authorization: Bearer " + sensitiveMarker)}, nil)
 	defer cleanup()
 
 	res, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "list_users"})
@@ -27,8 +27,8 @@ func TestOWASP_MCP01_ToolErrorsNeverLeakTokensOrBodies(t *testing.T) {
 		t.Fatal("expected IsError=true on upstream failure")
 	}
 	for _, content := range res.Content {
-		if text, ok := content.(*mcp.TextContent); ok && strings.Contains(text.Text, leakedToken) {
-			t.Fatalf("tool error leaked secret token: %q", text.Text)
+		if text, ok := content.(*mcp.TextContent); ok && strings.Contains(text.Text, sensitiveMarker) {
+			t.Fatalf("tool error leaked fixture marker: %q", text.Text)
 		}
 	}
 }
