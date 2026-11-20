@@ -12,24 +12,13 @@ import (
 )
 
 type tokenClient struct {
+	Client
 	getToken func(context.Context, string, gocloak.TokenOptions) (*gocloak.JWT, error)
 }
 
 //nolint:gocritic // GoCloak's interface requires TokenOptions by value.
 func (c *tokenClient) GetToken(ctx context.Context, realm string, options gocloak.TokenOptions) (*gocloak.JWT, error) {
 	return c.getToken(ctx, realm, options)
-}
-
-func (*tokenClient) GetUsers(context.Context, string, string, gocloak.GetUsersParams) ([]*gocloak.User, error) {
-	return []*gocloak.User{}, nil
-}
-
-func (*tokenClient) GetClients(context.Context, string, string, gocloak.GetClientsParams) ([]*gocloak.Client, error) {
-	return []*gocloak.Client{}, nil
-}
-
-func (*tokenClient) GetRealm(context.Context, string, string) (*gocloak.RealmRepresentation, error) {
-	return &gocloak.RealmRepresentation{}, nil
 }
 
 func TestTokenProviderSharesConcurrentRequest(t *testing.T) {
