@@ -36,14 +36,15 @@ func (s *service) ListEvents(ctx context.Context, realm string, first, pageSize 
 	if err != nil {
 		return nil, err
 	}
-	if err := validatePaginationInt32(first, pageSize); err != nil {
+	first32, max32, err := validatePaginationInt32(first, pageSize)
+	if err != nil {
 		return nil, err
 	}
 	if err := validateEventFilter(filter); err != nil {
 		return nil, err
 	}
 	events, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.EventRepresentation, error) {
-		return s.fetchEvents(ctx, token, targetRealm, first, pageSize, filter)
+		return s.fetchEvents(ctx, token, targetRealm, first32, max32, filter)
 	})
 	if err != nil {
 		return nil, err
@@ -56,14 +57,15 @@ func (s *service) ListAdminEvents(ctx context.Context, realm string, first, page
 	if err != nil {
 		return nil, err
 	}
-	if err := validatePaginationInt32(first, pageSize); err != nil {
+	first32, max32, err := validatePaginationInt32(first, pageSize)
+	if err != nil {
 		return nil, err
 	}
 	if err := validateAdminEventFilter(filter); err != nil {
 		return nil, err
 	}
 	events, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.AdminEventRepresentation, error) {
-		return s.fetchAdminEvents(ctx, token, targetRealm, first, pageSize, filter)
+		return s.fetchAdminEvents(ctx, token, targetRealm, first32, max32, filter)
 	})
 	if err != nil {
 		return nil, err
@@ -71,14 +73,11 @@ func (s *service) ListAdminEvents(ctx context.Context, realm string, first, page
 	return mapAdminEvents(events), nil
 }
 
-func validatePaginationInt32(first, pageSize int) error {
-	if err := validatePagination(first, pageSize); err != nil {
-		return err
+func validatePaginationInt32(first, pageSize int) (first32, max32 int32, err error) {
+	if first < 0 || first > math.MaxInt32 || pageSize < 1 || pageSize > maxPageSize {
+		return 0, 0, errInvalidPage
 	}
-	if first > math.MaxInt32 {
-		return errInvalidPage
-	}
-	return nil
+	return int32(first), int32(pageSize), nil
 }
 
 func validateEventFilter(filter EventFilter) error {
@@ -127,18 +126,15 @@ func (s *service) fetchRealm(ctx context.Context, token, realm string) (*gocloak
 	return rep, nil
 }
 
-func (s *service) fetchEvents(ctx context.Context, token, realm string, first, pageSize int, filter EventFilter) ([]*gocloak.EventRepresentation, error) {
-	// Bounds are validated by validatePaginationInt32.
-	first32 := int32(first)  //nolint:gosec // Validated <= math.MaxInt32.
-	max32 := int32(pageSize) //nolint:gosec // Validated 1..100.
+func (s *service) fetchEvents(ctx context.Context, token, realm string, first, pageSize int32, filter EventFilter) ([]*gocloak.EventRepresentation, error) {
 	events, err := s.client.GetEvents(ctx, token, realm, gocloak.GetEventsParams{
 		Type:     filter.Type,
 		Client:   optionalStringPtr(filter.Client),
 		UserID:   optionalStringPtr(filter.UserID),
 		DateFrom: optionalStringPtr(filter.DateFrom),
 		DateTo:   optionalStringPtr(filter.DateTo),
-		First:    &first32,
-		Max:      &max32,
+		First:    &first,
+		Max:      &pageSize,
 	})
 	if err != nil {
 		return nil, classifyUpstreamError(err)
@@ -146,17 +142,15 @@ func (s *service) fetchEvents(ctx context.Context, token, realm string, first, p
 	return events, nil
 }
 
-func (s *service) fetchAdminEvents(ctx context.Context, token, realm string, first, pageSize int, filter AdminEventFilter) ([]*gocloak.AdminEventRepresentation, error) {
-	first32 := int32(first)  //nolint:gosec // Validated <= math.MaxInt32.
-	max32 := int32(pageSize) //nolint:gosec // Validated 1..100.
+func (s *service) fetchAdminEvents(ctx context.Context, token, realm string, first, pageSize int32, filter AdminEventFilter) ([]*gocloak.AdminEventRepresentation, error) {
 	events, err := s.client.GetAdminEvents(ctx, token, realm, gocloak.GetAdminEventsParams{
 		OperationTypes: filter.OperationTypes,
 		ResourceTypes:  filter.ResourceTypes,
 		ResourcePath:   optionalStringPtr(filter.ResourcePath),
 		DateFrom:       optionalStringPtr(filter.DateFrom),
 		DateTo:         optionalStringPtr(filter.DateTo),
-		First:          &first32,
-		Max:            &max32,
+		First:          &first,
+		Max:            &pageSize,
 	})
 	if err != nil {
 		return nil, classifyUpstreamError(err)
