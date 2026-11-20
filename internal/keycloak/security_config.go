@@ -25,8 +25,8 @@ func (s *service) GetFlowExecutions(ctx context.Context, realm, flowAlias string
 	if err != nil {
 		return nil, err
 	}
-	if err = validateIdentifier(flowAlias); err != nil {
-		return nil, err
+	if valErr := validateIdentifier(flowAlias); valErr != nil {
+		return nil, valErr
 	}
 	executions, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.ModifyAuthenticationExecutionRepresentation, error) {
 		return s.fetchFlowExecutions(ctx, token, targetRealm, flowAlias)
@@ -70,8 +70,8 @@ func (s *service) GetIdentityProvider(ctx context.Context, realm, alias string) 
 	if err != nil {
 		return IdentityProviderInfo{}, err
 	}
-	if err = validateIdentifier(alias); err != nil {
-		return IdentityProviderInfo{}, err
+	if valErr := validateIdentifier(alias); valErr != nil {
+		return IdentityProviderInfo{}, valErr
 	}
 	provider, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.IdentityProviderRepresentation, error) {
 		return s.fetchIdentityProvider(ctx, token, targetRealm, alias)
@@ -87,11 +87,11 @@ func (s *service) ListOrganizations(ctx context.Context, realm string, first, pa
 	if err != nil {
 		return nil, err
 	}
-	if err = validatePagination(first, pageSize); err != nil {
-		return nil, err
+	if valErr := validatePagination(first, pageSize); valErr != nil {
+		return nil, valErr
 	}
-	if err = validateFilterString(search); err != nil {
-		return nil, err
+	if valErr := validateFilterString(search); valErr != nil {
+		return nil, valErr
 	}
 	orgs, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.OrganizationRepresentation, error) {
 		return s.fetchOrganizations(ctx, token, targetRealm, first, pageSize, search)
@@ -107,14 +107,14 @@ func (s *service) GetOrganizationMembers(ctx context.Context, realm, orgID strin
 	if err != nil {
 		return nil, err
 	}
-	if err = validateIdentifier(orgID); err != nil {
-		return nil, err
+	if valErr := validateIdentifier(orgID); valErr != nil {
+		return nil, valErr
 	}
-	if err = validatePagination(first, pageSize); err != nil {
-		return nil, err
+	if valErr := validatePagination(first, pageSize); valErr != nil {
+		return nil, valErr
 	}
-	if err = validateFilterString(search); err != nil {
-		return nil, err
+	if valErr := validateFilterString(search); valErr != nil {
+		return nil, valErr
 	}
 	members, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.MemberRepresentation, error) {
 		return s.fetchOrganizationMembers(ctx, token, targetRealm, orgID, first, pageSize, search)

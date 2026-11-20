@@ -11,11 +11,11 @@ func (s *service) ListGroups(ctx context.Context, realm string, first, pageSize 
 	if err != nil {
 		return nil, err
 	}
-	if err = validatePagination(first, pageSize); err != nil {
-		return nil, err
+	if valErr := validatePagination(first, pageSize); valErr != nil {
+		return nil, valErr
 	}
-	if err = validateFilterString(search); err != nil {
-		return nil, err
+	if valErr := validateFilterString(search); valErr != nil {
+		return nil, valErr
 	}
 	groups, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Group, error) {
 		return s.fetchGroups(ctx, token, targetRealm, first, pageSize, search)
@@ -31,8 +31,8 @@ func (s *service) CountGroups(ctx context.Context, realm, search string) (int, e
 	if err != nil {
 		return 0, err
 	}
-	if err = validateFilterString(search); err != nil {
-		return 0, err
+	if valErr := validateFilterString(search); valErr != nil {
+		return 0, valErr
 	}
 	return runWithTokenRetry(ctx, s.tokens, func(token string) (int, error) {
 		return s.fetchGroupsCount(ctx, token, targetRealm, search)
@@ -44,8 +44,8 @@ func (s *service) GetGroup(ctx context.Context, realm, groupID string) (GroupInf
 	if err != nil {
 		return GroupInfo{}, err
 	}
-	if err = validateIdentifier(groupID); err != nil {
-		return GroupInfo{}, err
+	if valErr := validateIdentifier(groupID); valErr != nil {
+		return GroupInfo{}, valErr
 	}
 	group, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.Group, error) {
 		return s.fetchGroup(ctx, token, targetRealm, groupID)
@@ -61,11 +61,11 @@ func (s *service) GetGroupMembers(ctx context.Context, realm, groupID string, fi
 	if err != nil {
 		return nil, err
 	}
-	if err = validateIdentifier(groupID); err != nil {
-		return nil, err
+	if valErr := validateIdentifier(groupID); valErr != nil {
+		return nil, valErr
 	}
-	if err = validatePagination(first, pageSize); err != nil {
-		return nil, err
+	if valErr := validatePagination(first, pageSize); valErr != nil {
+		return nil, valErr
 	}
 	users, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.User, error) {
 		return s.fetchGroupMembers(ctx, token, targetRealm, groupID, first, pageSize)
@@ -81,8 +81,8 @@ func (s *service) GetGroupRoles(ctx context.Context, realm, groupID string) (Rol
 	if err != nil {
 		return RoleMappings{}, err
 	}
-	if err = validateIdentifier(groupID); err != nil {
-		return RoleMappings{}, err
+	if valErr := validateIdentifier(groupID); valErr != nil {
+		return RoleMappings{}, valErr
 	}
 	mappings, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.MappingsRepresentation, error) {
 		return s.fetchGroupRoleMappings(ctx, token, targetRealm, groupID)

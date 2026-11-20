@@ -11,11 +11,11 @@ func (s *service) ListClients(ctx context.Context, realm string, first, pageSize
 	if err != nil {
 		return nil, err
 	}
-	if err = validatePagination(first, pageSize); err != nil {
-		return nil, err
+	if valErr := validatePagination(first, pageSize); valErr != nil {
+		return nil, valErr
 	}
-	if err = validateFilterString(filter.ClientID); err != nil {
-		return nil, err
+	if valErr := validateFilterString(filter.ClientID); valErr != nil {
+		return nil, valErr
 	}
 	clients, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Client, error) {
 		return s.fetchClients(ctx, token, targetRealm, first, pageSize, filter)
@@ -31,8 +31,8 @@ func (s *service) GetClient(ctx context.Context, realm, clientUUID string) (Clie
 	if err != nil {
 		return ClientInfo{}, err
 	}
-	if err = validateIdentifier(clientUUID); err != nil {
-		return ClientInfo{}, err
+	if valErr := validateIdentifier(clientUUID); valErr != nil {
+		return ClientInfo{}, valErr
 	}
 	client, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.Client, error) {
 		return s.fetchClient(ctx, token, targetRealm, clientUUID)
@@ -48,8 +48,8 @@ func (s *service) GetClientServiceAccount(ctx context.Context, realm, clientUUID
 	if err != nil {
 		return User{}, err
 	}
-	if err = validateIdentifier(clientUUID); err != nil {
-		return User{}, err
+	if valErr := validateIdentifier(clientUUID); valErr != nil {
+		return User{}, valErr
 	}
 	user, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.User, error) {
 		return s.fetchClientServiceAccount(ctx, token, targetRealm, clientUUID)
@@ -65,14 +65,14 @@ func (s *service) ListClientRoles(ctx context.Context, realm, clientUUID string,
 	if err != nil {
 		return nil, err
 	}
-	if err = validateIdentifier(clientUUID); err != nil {
-		return nil, err
+	if valErr := validateIdentifier(clientUUID); valErr != nil {
+		return nil, valErr
 	}
-	if err = validatePagination(first, pageSize); err != nil {
-		return nil, err
+	if valErr := validatePagination(first, pageSize); valErr != nil {
+		return nil, valErr
 	}
-	if err = validateFilterString(search); err != nil {
-		return nil, err
+	if valErr := validateFilterString(search); valErr != nil {
+		return nil, valErr
 	}
 	roles, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Role, error) {
 		return s.fetchClientRoles(ctx, token, targetRealm, clientUUID, first, pageSize, search)
@@ -102,8 +102,8 @@ func (s *service) GetClientScope(ctx context.Context, realm, scopeID string) (Cl
 	if err != nil {
 		return ClientScopeInfo{}, err
 	}
-	if err = validateIdentifier(scopeID); err != nil {
-		return ClientScopeInfo{}, err
+	if valErr := validateIdentifier(scopeID); valErr != nil {
+		return ClientScopeInfo{}, valErr
 	}
 	scope, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.ClientScope, error) {
 		return s.fetchClientScope(ctx, token, targetRealm, scopeID)

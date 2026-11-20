@@ -40,8 +40,8 @@ func (s *service) ListEvents(ctx context.Context, realm string, first, pageSize 
 	if err != nil {
 		return nil, err
 	}
-	if err = validateEventFilter(filter); err != nil {
-		return nil, err
+	if valErr := validateEventFilter(filter); valErr != nil {
+		return nil, valErr
 	}
 	events, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.EventRepresentation, error) {
 		return s.fetchEvents(ctx, token, targetRealm, first32, max32, filter)
@@ -61,8 +61,8 @@ func (s *service) ListAdminEvents(ctx context.Context, realm string, first, page
 	if err != nil {
 		return nil, err
 	}
-	if err = validateAdminEventFilter(filter); err != nil {
-		return nil, err
+	if valErr := validateAdminEventFilter(filter); valErr != nil {
+		return nil, valErr
 	}
 	events, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.AdminEventRepresentation, error) {
 		return s.fetchAdminEvents(ctx, token, targetRealm, first32, max32, filter)

@@ -179,11 +179,11 @@ func TestAll32ReadOnlyToolsRegisteredAndCallable(t *testing.T) {
 		t.Fatalf("ListTools() count = %d, err = %v; want 32", len(listed.Tools), err)
 	}
 	for _, tool := range listed.Tools {
-		assertReadOnlyToolCallable(t, ctx, session, tool)
+		assertReadOnlyToolCallable(ctx, t, session, tool)
 	}
 }
 
-func assertReadOnlyToolCallable(t *testing.T, ctx context.Context, session *mcp.ClientSession, tool *mcp.Tool) {
+func assertReadOnlyToolCallable(ctx context.Context, t *testing.T, session *mcp.ClientSession, tool *mcp.Tool) {
 	t.Helper()
 	if tool.Annotations == nil || !tool.Annotations.ReadOnlyHint ||
 		tool.Annotations.DestructiveHint == nil || *tool.Annotations.DestructiveHint {

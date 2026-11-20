@@ -12,11 +12,11 @@ func (s *service) ListUsers(ctx context.Context, realm string, first, pageSize i
 	if err != nil {
 		return nil, err
 	}
-	if err = validatePagination(first, pageSize); err != nil {
-		return nil, err
+	if valErr := validatePagination(first, pageSize); valErr != nil {
+		return nil, valErr
 	}
-	if err = validateUserFilter(filter); err != nil {
-		return nil, err
+	if valErr := validateUserFilter(filter); valErr != nil {
+		return nil, valErr
 	}
 	users, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.User, error) {
 		return s.fetchUsers(ctx, token, targetRealm, first, pageSize, filter)
@@ -32,8 +32,8 @@ func (s *service) GetUser(ctx context.Context, realm, userID string) (User, erro
 	if err != nil {
 		return User{}, err
 	}
-	if err = validateIdentifier(userID); err != nil {
-		return User{}, err
+	if valErr := validateIdentifier(userID); valErr != nil {
+		return User{}, valErr
 	}
 	user, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.User, error) {
 		return s.fetchUser(ctx, token, targetRealm, userID)
@@ -49,8 +49,8 @@ func (s *service) CountUsers(ctx context.Context, realm string, filter UserFilte
 	if err != nil {
 		return 0, err
 	}
-	if err = validateUserFilter(filter); err != nil {
-		return 0, err
+	if valErr := validateUserFilter(filter); valErr != nil {
+		return 0, valErr
 	}
 	return runWithTokenRetry(ctx, s.tokens, func(token string) (int, error) {
 		return s.fetchUserCount(ctx, token, targetRealm, filter)
@@ -62,8 +62,8 @@ func (s *service) GetUserSessions(ctx context.Context, realm, userID string) ([]
 	if err != nil {
 		return nil, err
 	}
-	if err = validateIdentifier(userID); err != nil {
-		return nil, err
+	if valErr := validateIdentifier(userID); valErr != nil {
+		return nil, valErr
 	}
 	sessions, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.UserSessionRepresentation, error) {
 		return s.fetchUserSessions(ctx, token, targetRealm, userID)
@@ -79,11 +79,11 @@ func (s *service) GetUserGroups(ctx context.Context, realm, userID string, first
 	if err != nil {
 		return nil, err
 	}
-	if err = validateIdentifier(userID); err != nil {
-		return nil, err
+	if valErr := validateIdentifier(userID); valErr != nil {
+		return nil, valErr
 	}
-	if err = validatePagination(first, pageSize); err != nil {
-		return nil, err
+	if valErr := validatePagination(first, pageSize); valErr != nil {
+		return nil, valErr
 	}
 	groups, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Group, error) {
 		return s.fetchUserGroups(ctx, token, targetRealm, userID, first, pageSize)
@@ -99,8 +99,8 @@ func (s *service) GetUserRoles(ctx context.Context, realm, userID string) (RoleM
 	if err != nil {
 		return RoleMappings{}, err
 	}
-	if err = validateIdentifier(userID); err != nil {
-		return RoleMappings{}, err
+	if valErr := validateIdentifier(userID); valErr != nil {
+		return RoleMappings{}, valErr
 	}
 	mappings, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.MappingsRepresentation, error) {
 		return s.fetchUserRoleMappings(ctx, token, targetRealm, userID)

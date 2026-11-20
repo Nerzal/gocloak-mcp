@@ -11,11 +11,11 @@ func (s *service) ListRealmRoles(ctx context.Context, realm string, first, pageS
 	if err != nil {
 		return nil, err
 	}
-	if err = validatePagination(first, pageSize); err != nil {
-		return nil, err
+	if valErr := validatePagination(first, pageSize); valErr != nil {
+		return nil, valErr
 	}
-	if err = validateFilterString(search); err != nil {
-		return nil, err
+	if valErr := validateFilterString(search); valErr != nil {
+		return nil, valErr
 	}
 	roles, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Role, error) {
 		return s.fetchRealmRoles(ctx, token, targetRealm, first, pageSize, search)
@@ -31,8 +31,8 @@ func (s *service) GetRealmRole(ctx context.Context, realm, roleName string) (Rol
 	if err != nil {
 		return RoleInfo{}, err
 	}
-	if err = validateIdentifier(roleName); err != nil {
-		return RoleInfo{}, err
+	if valErr := validateIdentifier(roleName); valErr != nil {
+		return RoleInfo{}, valErr
 	}
 	role, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.Role, error) {
 		return s.fetchRealmRole(ctx, token, targetRealm, roleName)
@@ -48,11 +48,11 @@ func (s *service) GetUsersInRole(ctx context.Context, realm, roleName string, fi
 	if err != nil {
 		return nil, err
 	}
-	if err = validateIdentifier(roleName); err != nil {
-		return nil, err
+	if valErr := validateIdentifier(roleName); valErr != nil {
+		return nil, valErr
 	}
-	if err = validatePagination(first, pageSize); err != nil {
-		return nil, err
+	if valErr := validatePagination(first, pageSize); valErr != nil {
+		return nil, valErr
 	}
 	users, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.User, error) {
 		return s.fetchUsersByRole(ctx, token, targetRealm, roleName, first, pageSize)
@@ -68,14 +68,14 @@ func (s *service) GetUsersInClientRole(ctx context.Context, realm, clientUUID, r
 	if err != nil {
 		return nil, err
 	}
-	if err = validateIdentifier(clientUUID); err != nil {
-		return nil, err
+	if valErr := validateIdentifier(clientUUID); valErr != nil {
+		return nil, valErr
 	}
-	if err = validateIdentifier(roleName); err != nil {
-		return nil, err
+	if valErr := validateIdentifier(roleName); valErr != nil {
+		return nil, valErr
 	}
-	if err = validatePagination(first, pageSize); err != nil {
-		return nil, err
+	if valErr := validatePagination(first, pageSize); valErr != nil {
+		return nil, valErr
 	}
 	users, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.User, error) {
 		return s.fetchUsersByClientRole(ctx, token, targetRealm, clientUUID, roleName, first, pageSize)

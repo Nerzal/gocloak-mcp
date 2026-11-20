@@ -53,6 +53,8 @@ func (c Config) String() string {
 }
 
 // LogValue redacts secrets when Config is passed to log/slog.
+//
+//nolint:gocritic // Value receiver ensures secrets are redacted even when Config is logged by value.
 func (c Config) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("keycloak_url", c.KeycloakURL),
@@ -135,7 +137,7 @@ func parseAllowedRealms(defaultRealm, raw string) []string {
 }
 
 // Validate checks the Keycloak URL, realms, credentials, timeout, and transport settings.
-func (c Config) Validate() error {
+func (c *Config) Validate() error {
 	if !isValidKeycloakURL(c.KeycloakURL) {
 		return errors.New("KEYCLOAK_URL must use HTTPS (or loopback HTTP) without credentials, query, or fragment")
 	}
