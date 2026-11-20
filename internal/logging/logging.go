@@ -23,10 +23,18 @@ func redactAttribute(groups []string, attr slog.Attr) slog.Attr {
 	if len(groups) == 0 && isBuiltinKey(attr.Key) {
 		return attr
 	}
-	if isSensitiveKey(attr.Key) || hasSensitiveGroup(groups) {
+	if isSensitiveKey(attr.Key) || hasSensitiveGroup(groups) || isSensitiveValue(attr.Value) {
 		return slog.String(attr.Key, "[REDACTED]")
 	}
 	return attr
+}
+
+func isSensitiveValue(val slog.Value) bool {
+	if val.Kind() != slog.KindString {
+		return false
+	}
+	s := val.String()
+	return strings.HasPrefix(s, "Bearer ") || strings.Contains(s, "eyJhbG")
 }
 
 func isBuiltinKey(key string) bool {

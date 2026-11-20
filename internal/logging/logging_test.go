@@ -53,6 +53,18 @@ func TestLoggerRedactsJSONOutput(t *testing.T) {
 	}
 }
 
+func TestRedactAttributeRedactsJWTAndBearerValues(t *testing.T) {
+	for _, val := range []string{
+		"Bearer secret-token-value",
+		"eyJhbGciOiJSUzI1NiJ9.payload.sig",
+	} {
+		got := redactAttribute(nil, slog.String("detail", val))
+		if got.Value.String() != "[REDACTED]" {
+			t.Fatalf("redactAttribute(detail=%q) = %q, want [REDACTED]", val, got.Value.String())
+		}
+	}
+}
+
 func TestNewReturnsLogger(t *testing.T) {
 	if New() == nil {
 		t.Fatal("New() = nil")

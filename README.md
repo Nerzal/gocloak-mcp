@@ -31,6 +31,9 @@ secrets when validation fails.
 | `MCP_TRANSPORT` | No | `stdio` | Transport mode: `stdio` or `http` (Streamable HTTP) |
 | `MCP_HTTP_ADDR` | No | `127.0.0.1:8080` | Listen address when `MCP_TRANSPORT=http` |
 | `MCP_HTTP_BEARER_TOKEN` | Conditional | — | Optional on loopback; **required (min 32 chars)** when `MCP_HTTP_ADDR` binds to a non-loopback address |
+| `MCP_HTTP_ALLOWED_ORIGINS` | No | Loopback only | Comma-separated additional `Origin` allowlist for browser clients on Streamable HTTP (DNS rebinding protection) |
+
+See [Security & Benchmarks](docs/SECURITY_AND_BENCHMARKS.md) for the full OWASP MCP Top 10 control matrix and Go vs. Java/Python benchmark comparison.
 
 Use your deployment platform's secret manager to provide secrets. Do not put
 credentials in command-line arguments, configuration files, or logs.
