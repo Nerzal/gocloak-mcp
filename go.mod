@@ -5,7 +5,7 @@ go 1.26.11
 require (
 	github.com/Nerzal/gocloak/v14 v14.0.4
 	github.com/modelcontextprotocol/go-sdk v1.8.0
-	golang.org/x/sync v0.20.0
+	golang.org/x/sync v0.25.0
 )
 
 require (
