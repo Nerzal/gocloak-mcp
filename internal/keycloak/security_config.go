@@ -305,7 +305,7 @@ func mapOrganizationMembers(members []*gocloak.MemberRepresentation) []Organizat
 		}
 		result = append(result, OrganizationMember{
 			User:           mapUser(&member.User),
-			MembershipType: sanitizeOutputString(string(member.MembershipType), maxOutputFieldLen),
+			MembershipType: sanitizeOutputString(string(member.MembershipType)),
 		})
 	}
 	return result

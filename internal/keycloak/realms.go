@@ -206,11 +206,11 @@ func mapEvents(events []*gocloak.EventRepresentation) []EventInfo {
 		}
 		result = append(result, EventInfo{
 			Time:      event.Time,
-			Type:      sanitizeOutputString(event.Type, maxOutputFieldLen),
-			RealmID:   sanitizeOutputString(event.RealmID, maxOutputFieldLen),
-			ClientID:  sanitizeOutputString(event.ClientID, maxOutputFieldLen),
-			UserID:    sanitizeOutputString(event.UserID, maxOutputFieldLen),
-			SessionID: sanitizeOutputString(event.SessionID, maxOutputFieldLen),
+			Type:      sanitizeOutputString(event.Type),
+			RealmID:   sanitizeOutputString(event.RealmID),
+			ClientID:  sanitizeOutputString(event.ClientID),
+			UserID:    sanitizeOutputString(event.UserID),
+			SessionID: sanitizeOutputString(event.SessionID),
 		})
 	}
 	return result
@@ -224,12 +224,12 @@ func mapAdminEvents(events []*gocloak.AdminEventRepresentation) []AdminEventInfo
 		}
 		result = append(result, AdminEventInfo{
 			Time:          event.Time,
-			OperationType: sanitizeOutputString(event.OperationType, maxOutputFieldLen),
-			RealmID:       sanitizeOutputString(event.RealmID, maxOutputFieldLen),
-			ResourceType:  sanitizeOutputString(event.ResourceType, maxOutputFieldLen),
-			ResourcePath:  sanitizeOutputString(event.ResourcePath, maxOutputFieldLen),
-			AuthClientID:  sanitizeOutputString(event.AuthDetails.ClientID, maxOutputFieldLen),
-			AuthUserID:    sanitizeOutputString(event.AuthDetails.UserID, maxOutputFieldLen),
+			OperationType: sanitizeOutputString(event.OperationType),
+			RealmID:       sanitizeOutputString(event.RealmID),
+			ResourceType:  sanitizeOutputString(event.ResourceType),
+			ResourcePath:  sanitizeOutputString(event.ResourcePath),
+			AuthClientID:  sanitizeOutputString(event.AuthDetails.ClientID),
+			AuthUserID:    sanitizeOutputString(event.AuthDetails.UserID),
 		})
 	}
 	return result

@@ -228,9 +228,9 @@ func mapUserSessions(sessions []*gocloak.UserSessionRepresentation) []UserSessio
 			clients = maps.Clone(session.Clients)
 		}
 		result = append(result, UserSession{
-			ID:         sanitizeOutputString(session.ID, maxOutputFieldLen),
-			UserID:     sanitizeOutputString(session.UserID, maxOutputFieldLen),
-			Username:   sanitizeOutputString(session.Username, maxOutputFieldLen),
+			ID:         sanitizeOutputString(session.ID),
+			UserID:     sanitizeOutputString(session.UserID),
+			Username:   sanitizeOutputString(session.Username),
 			Start:      session.Start,
 			LastAccess: session.LastAccess,
 			Clients:    clients,

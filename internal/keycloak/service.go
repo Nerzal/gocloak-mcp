@@ -204,21 +204,21 @@ func derefString(ptr *string) string {
 	if ptr == nil {
 		return ""
 	}
-	return sanitizeOutputString(*ptr, maxOutputFieldLen)
+	return sanitizeOutputString(*ptr)
 }
 
-func sanitizeOutputString(s string, maxLen int) string {
-	if isCleanShortString(s, maxLen) {
+func sanitizeOutputString(s string) string {
+	if isCleanShortString(s) {
 		return s
 	}
 	var b strings.Builder
-	b.Grow(min(len(s), maxLen))
+	b.Grow(min(len(s), maxOutputFieldLen))
 	count := 0
 	for _, r := range s {
 		if isUnsafeOutputRune(r) {
 			continue
 		}
-		if count >= maxLen {
+		if count >= maxOutputFieldLen {
 			break
 		}
 		b.WriteRune(r)
@@ -227,8 +227,8 @@ func sanitizeOutputString(s string, maxLen int) string {
 	return b.String()
 }
 
-func isCleanShortString(s string, maxLen int) bool {
-	if len(s) > maxLen {
+func isCleanShortString(s string) bool {
+	if len(s) > maxOutputFieldLen {
 		return false
 	}
 	for _, r := range s {

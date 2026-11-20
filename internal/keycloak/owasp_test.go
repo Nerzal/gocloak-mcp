@@ -81,7 +81,7 @@ func TestOWASP_MCP05_PathTraversalAndInjectionRejected(t *testing.T) {
 
 func TestOWASP_MCP06_OutputSanitizationNeutralizesControlAndBiDiRunes(t *testing.T) {
 	dirty := "Alice\x1b[31m\x00\u202eEvil" + strings.Repeat("x", 600)
-	clean := sanitizeOutputString(dirty, maxOutputFieldLen)
+	clean := sanitizeOutputString(dirty)
 	if strings.ContainsAny(clean, "\x1b\x00\u202e") {
 		t.Fatalf("sanitizeOutputString left unsafe runes: %q", clean)
 	}
