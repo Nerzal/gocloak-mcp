@@ -110,11 +110,11 @@ func (s *stubService) GetRealmInfo(context.Context, string) (keycloak.RealmInfo,
 	return keycloak.RealmInfo{ID: "1", Name: "example", Enabled: true}, s.err
 }
 
-func (s *stubService) ListEvents(context.Context, string, int, int, keycloak.EventFilter) ([]keycloak.EventInfo, error) {
+func (s *stubService) ListEvents(context.Context, string, int, int, *keycloak.EventFilter) ([]keycloak.EventInfo, error) {
 	return []keycloak.EventInfo{{Type: "LOGIN"}}, s.err
 }
 
-func (s *stubService) ListAdminEvents(context.Context, string, int, int, keycloak.AdminEventFilter) ([]keycloak.AdminEventInfo, error) {
+func (s *stubService) ListAdminEvents(context.Context, string, int, int, *keycloak.AdminEventFilter) ([]keycloak.AdminEventInfo, error) {
 	return []keycloak.AdminEventInfo{{OperationType: "CREATE"}}, s.err
 }
 
@@ -148,7 +148,7 @@ func (s *stubService) GetOrganizationMembers(context.Context, string, string, in
 
 func intPtr(v int) *int { return &v }
 
-func connectInMemory(t *testing.T, svc Service, logger *slog.Logger) (*mcp.ClientSession, func()) {
+func connectInMemory(t *testing.T, svc Service, logger *slog.Logger) (session *mcp.ClientSession, cleanup func()) {
 	t.Helper()
 	ctx := context.Background()
 	server := New(svc, 0, logger)
@@ -158,7 +158,7 @@ func connectInMemory(t *testing.T, svc Service, logger *slog.Logger) (*mcp.Clien
 		t.Fatalf("server.Connect() error = %v", err)
 	}
 	client := mcp.NewClient(&mcp.Implementation{Name: "test-client", Version: "0.1.0"}, nil)
-	session, err := client.Connect(ctx, clientTransport, nil)
+	session, err = client.Connect(ctx, clientTransport, nil)
 	if err != nil {
 		_ = serverSession.Close()
 		t.Fatalf("client.Connect() error = %v", err)
@@ -179,39 +179,47 @@ func TestAll32ReadOnlyToolsRegisteredAndCallable(t *testing.T) {
 		t.Fatalf("ListTools() count = %d, err = %v; want 32", len(listed.Tools), err)
 	}
 	for _, tool := range listed.Tools {
-		if tool.Annotations == nil || !tool.Annotations.ReadOnlyHint || tool.Annotations.DestructiveHint == nil || *tool.Annotations.DestructiveHint {
-			t.Errorf("tool %q does not declare read-only non-destructive annotations", tool.Name)
-		}
-		res, callErr := session.CallTool(ctx, &mcp.CallToolParams{Name: tool.Name, Arguments: sampleArgs(tool.Name)})
-		if callErr != nil || res.IsError {
-			t.Errorf("CallTool(%s) failed: err=%v isError=%v", tool.Name, callErr, res != nil && res.IsError)
-		}
+		assertReadOnlyToolCallable(t, ctx, session, tool)
 	}
 }
 
-func sampleArgs(toolName string) map[string]any {
-	switch toolName {
-	case "get_user", "get_user_sessions", "get_user_groups", "get_user_roles":
-		return map[string]any{"userId": "u1"}
-	case "get_client", "get_client_service_account", "list_client_roles":
-		return map[string]any{"clientUuid": "c1"}
-	case "get_client_scope":
-		return map[string]any{"scopeId": "sc1"}
-	case "get_realm_role", "get_users_in_role":
-		return map[string]any{"roleName": "viewer"}
-	case "get_users_in_client_role":
-		return map[string]any{"clientUuid": "c1", "roleName": "read"}
-	case "get_group", "get_group_members", "get_group_roles":
-		return map[string]any{"groupId": "g1"}
-	case "get_flow_executions":
-		return map[string]any{"flowAlias": "browser"}
-	case "get_identity_provider":
-		return map[string]any{"alias": "google"}
-	case "get_organization_members":
-		return map[string]any{"organizationId": "o1"}
-	default:
-		return map[string]any{}
+func assertReadOnlyToolCallable(t *testing.T, ctx context.Context, session *mcp.ClientSession, tool *mcp.Tool) {
+	t.Helper()
+	if tool.Annotations == nil || !tool.Annotations.ReadOnlyHint ||
+		tool.Annotations.DestructiveHint == nil || *tool.Annotations.DestructiveHint {
+		t.Errorf("tool %q does not declare read-only non-destructive annotations", tool.Name)
 	}
+	res, err := session.CallTool(ctx, &mcp.CallToolParams{Name: tool.Name, Arguments: sampleArgs(tool.Name)})
+	if err != nil || res.IsError {
+		t.Errorf("CallTool(%s) failed: err=%v isError=%v", tool.Name, err, res != nil && res.IsError)
+	}
+}
+
+var toolSampleArgs = map[string]map[string]any{
+	"get_user":                   {"userId": "u1"},
+	"get_user_sessions":          {"userId": "u1"},
+	"get_user_groups":            {"userId": "u1"},
+	"get_user_roles":             {"userId": "u1"},
+	"get_client":                 {"clientUuid": "c1"},
+	"get_client_service_account": {"clientUuid": "c1"},
+	"list_client_roles":          {"clientUuid": "c1"},
+	"get_client_scope":           {"scopeId": "sc1"},
+	"get_realm_role":             {"roleName": "viewer"},
+	"get_users_in_role":          {"roleName": "viewer"},
+	"get_users_in_client_role":   {"clientUuid": "c1", "roleName": "read"},
+	"get_group":                  {"groupId": "g1"},
+	"get_group_members":          {"groupId": "g1"},
+	"get_group_roles":            {"groupId": "g1"},
+	"get_flow_executions":        {"flowAlias": "browser"},
+	"get_identity_provider":      {"alias": "google"},
+	"get_organization_members":   {"organizationId": "o1"},
+}
+
+func sampleArgs(toolName string) map[string]any {
+	if args, ok := toolSampleArgs[toolName]; ok {
+		return args
+	}
+	return map[string]any{}
 }
 
 func TestValidatePageRejectsInvalidAndExplicitZeroMax(t *testing.T) {

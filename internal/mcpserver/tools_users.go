@@ -62,7 +62,7 @@ func registerListAndGetUsers(server *mcp.Server, deps toolDeps) {
 		filter := keycloak.UserFilter{Search: in.Search, Username: in.Username, Email: in.Email, Exact: in.Exact}
 		return executeTool(ctx, deps, "list_users", func(rCtx context.Context) (usersOutput, error) {
 			users, callErr := deps.service.ListUsers(rCtx, in.Realm, first, maxSize, filter)
-			return usersOutput{Users: users}, callErr
+			return usersOutput{Users: users}, sanitizeErr(callErr)
 		})
 	})
 
@@ -72,7 +72,8 @@ func registerListAndGetUsers(server *mcp.Server, deps toolDeps) {
 		Annotations: deps.annotations,
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in userIDInput) (*mcp.CallToolResult, keycloak.User, error) {
 		return executeTool(ctx, deps, "get_user", func(rCtx context.Context) (keycloak.User, error) {
-			return deps.service.GetUser(rCtx, in.Realm, in.UserID)
+			res, callErr := deps.service.GetUser(rCtx, in.Realm, in.UserID)
+			return res, sanitizeErr(callErr)
 		})
 	})
 
@@ -84,7 +85,7 @@ func registerListAndGetUsers(server *mcp.Server, deps toolDeps) {
 		filter := keycloak.UserFilter{Search: in.Search, Username: in.Username, Email: in.Email, Exact: in.Exact}
 		return executeTool(ctx, deps, "count_users", func(rCtx context.Context) (countOutput, error) {
 			count, callErr := deps.service.CountUsers(rCtx, in.Realm, filter)
-			return countOutput{Count: count}, callErr
+			return countOutput{Count: count}, sanitizeErr(callErr)
 		})
 	})
 }
@@ -97,7 +98,7 @@ func registerUserRelations(server *mcp.Server, deps toolDeps) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in userIDInput) (*mcp.CallToolResult, userSessionsOutput, error) {
 		return executeTool(ctx, deps, "get_user_sessions", func(rCtx context.Context) (userSessionsOutput, error) {
 			sessions, callErr := deps.service.GetUserSessions(rCtx, in.Realm, in.UserID)
-			return userSessionsOutput{Sessions: sessions}, callErr
+			return userSessionsOutput{Sessions: sessions}, sanitizeErr(callErr)
 		})
 	})
 
@@ -112,7 +113,7 @@ func registerUserRelations(server *mcp.Server, deps toolDeps) {
 		}
 		return executeTool(ctx, deps, "get_user_groups", func(rCtx context.Context) (groupsOutput, error) {
 			groups, callErr := deps.service.GetUserGroups(rCtx, in.Realm, in.UserID, first, maxSize)
-			return groupsOutput{Groups: groups}, callErr
+			return groupsOutput{Groups: groups}, sanitizeErr(callErr)
 		})
 	})
 
@@ -122,7 +123,8 @@ func registerUserRelations(server *mcp.Server, deps toolDeps) {
 		Annotations: deps.annotations,
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in userIDInput) (*mcp.CallToolResult, keycloak.RoleMappings, error) {
 		return executeTool(ctx, deps, "get_user_roles", func(rCtx context.Context) (keycloak.RoleMappings, error) {
-			return deps.service.GetUserRoles(rCtx, in.Realm, in.UserID)
+			res, callErr := deps.service.GetUserRoles(rCtx, in.Realm, in.UserID)
+			return res, sanitizeErr(callErr)
 		})
 	})
 }

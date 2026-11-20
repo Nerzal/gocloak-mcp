@@ -69,7 +69,7 @@ func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, authFlowsOutput, error) {
 		return executeTool(ctx, deps, "list_authentication_flows", func(rCtx context.Context) (authFlowsOutput, error) {
 			flows, callErr := deps.service.ListAuthenticationFlows(rCtx, in.Realm)
-			return authFlowsOutput{Flows: flows}, callErr
+			return authFlowsOutput{Flows: flows}, sanitizeErr(callErr)
 		})
 	})
 
@@ -80,7 +80,7 @@ func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in flowAliasInput) (*mcp.CallToolResult, flowExecutionsOutput, error) {
 		return executeTool(ctx, deps, "get_flow_executions", func(rCtx context.Context) (flowExecutionsOutput, error) {
 			execs, callErr := deps.service.GetFlowExecutions(rCtx, in.Realm, in.FlowAlias)
-			return flowExecutionsOutput{Executions: execs}, callErr
+			return flowExecutionsOutput{Executions: execs}, sanitizeErr(callErr)
 		})
 	})
 
@@ -91,7 +91,7 @@ func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, requiredActionsOutput, error) {
 		return executeTool(ctx, deps, "list_required_actions", func(rCtx context.Context) (requiredActionsOutput, error) {
 			actions, callErr := deps.service.ListRequiredActions(rCtx, in.Realm)
-			return requiredActionsOutput{RequiredActions: actions}, callErr
+			return requiredActionsOutput{RequiredActions: actions}, sanitizeErr(callErr)
 		})
 	})
 }
@@ -104,7 +104,7 @@ func registerIdentityProviderTools(server *mcp.Server, deps toolDeps) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, identityProvidersOutput, error) {
 		return executeTool(ctx, deps, "list_identity_providers", func(rCtx context.Context) (identityProvidersOutput, error) {
 			idps, callErr := deps.service.ListIdentityProviders(rCtx, in.Realm)
-			return identityProvidersOutput{IdentityProviders: idps}, callErr
+			return identityProvidersOutput{IdentityProviders: idps}, sanitizeErr(callErr)
 		})
 	})
 
@@ -114,7 +114,8 @@ func registerIdentityProviderTools(server *mcp.Server, deps toolDeps) {
 		Annotations: deps.annotations,
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in idpAliasInput) (*mcp.CallToolResult, keycloak.IdentityProviderInfo, error) {
 		return executeTool(ctx, deps, "get_identity_provider", func(rCtx context.Context) (keycloak.IdentityProviderInfo, error) {
-			return deps.service.GetIdentityProvider(rCtx, in.Realm, in.Alias)
+			res, callErr := deps.service.GetIdentityProvider(rCtx, in.Realm, in.Alias)
+			return res, sanitizeErr(callErr)
 		})
 	})
 }
@@ -131,7 +132,7 @@ func registerOrganizationTools(server *mcp.Server, deps toolDeps) {
 		}
 		return executeTool(ctx, deps, "list_organizations", func(rCtx context.Context) (organizationsOutput, error) {
 			orgs, callErr := deps.service.ListOrganizations(rCtx, in.Realm, first, maxSize, in.Search)
-			return organizationsOutput{Organizations: orgs}, callErr
+			return organizationsOutput{Organizations: orgs}, sanitizeErr(callErr)
 		})
 	})
 
@@ -146,7 +147,7 @@ func registerOrganizationTools(server *mcp.Server, deps toolDeps) {
 		}
 		return executeTool(ctx, deps, "get_organization_members", func(rCtx context.Context) (orgMembersOutput, error) {
 			members, callErr := deps.service.GetOrganizationMembers(rCtx, in.Realm, in.OrganizationID, first, maxSize, in.Search)
-			return orgMembersOutput{Members: members}, callErr
+			return orgMembersOutput{Members: members}, sanitizeErr(callErr)
 		})
 	})
 }

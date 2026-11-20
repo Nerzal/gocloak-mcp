@@ -51,7 +51,7 @@ func registerGroupCoreTools(server *mcp.Server, deps toolDeps) {
 		}
 		return executeTool(ctx, deps, "list_groups", func(rCtx context.Context) (groupsOutput, error) {
 			groups, callErr := deps.service.ListGroups(rCtx, in.Realm, first, maxSize, in.Search)
-			return groupsOutput{Groups: groups}, callErr
+			return groupsOutput{Groups: groups}, sanitizeErr(callErr)
 		})
 	})
 
@@ -62,7 +62,7 @@ func registerGroupCoreTools(server *mcp.Server, deps toolDeps) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in countGroupsInput) (*mcp.CallToolResult, countOutput, error) {
 		return executeTool(ctx, deps, "count_groups", func(rCtx context.Context) (countOutput, error) {
 			count, callErr := deps.service.CountGroups(rCtx, in.Realm, in.Search)
-			return countOutput{Count: count}, callErr
+			return countOutput{Count: count}, sanitizeErr(callErr)
 		})
 	})
 
@@ -72,7 +72,8 @@ func registerGroupCoreTools(server *mcp.Server, deps toolDeps) {
 		Annotations: deps.annotations,
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in groupIDInput) (*mcp.CallToolResult, keycloak.GroupInfo, error) {
 		return executeTool(ctx, deps, "get_group", func(rCtx context.Context) (keycloak.GroupInfo, error) {
-			return deps.service.GetGroup(rCtx, in.Realm, in.GroupID)
+			res, callErr := deps.service.GetGroup(rCtx, in.Realm, in.GroupID)
+			return res, sanitizeErr(callErr)
 		})
 	})
 }
@@ -89,7 +90,7 @@ func registerGroupRelationTools(server *mcp.Server, deps toolDeps) {
 		}
 		return executeTool(ctx, deps, "get_group_members", func(rCtx context.Context) (usersOutput, error) {
 			users, callErr := deps.service.GetGroupMembers(rCtx, in.Realm, in.GroupID, first, maxSize)
-			return usersOutput{Users: users}, callErr
+			return usersOutput{Users: users}, sanitizeErr(callErr)
 		})
 	})
 
@@ -99,7 +100,8 @@ func registerGroupRelationTools(server *mcp.Server, deps toolDeps) {
 		Annotations: deps.annotations,
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in groupIDInput) (*mcp.CallToolResult, keycloak.RoleMappings, error) {
 		return executeTool(ctx, deps, "get_group_roles", func(rCtx context.Context) (keycloak.RoleMappings, error) {
-			return deps.service.GetGroupRoles(rCtx, in.Realm, in.GroupID)
+			res, callErr := deps.service.GetGroupRoles(rCtx, in.Realm, in.GroupID)
+			return res, sanitizeErr(callErr)
 		})
 	})
 }

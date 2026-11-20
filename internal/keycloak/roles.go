@@ -11,10 +11,10 @@ func (s *service) ListRealmRoles(ctx context.Context, realm string, first, pageS
 	if err != nil {
 		return nil, err
 	}
-	if err := validatePagination(first, pageSize); err != nil {
+	if err = validatePagination(first, pageSize); err != nil {
 		return nil, err
 	}
-	if err := validateFilterString(search); err != nil {
+	if err = validateFilterString(search); err != nil {
 		return nil, err
 	}
 	roles, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Role, error) {
@@ -31,7 +31,7 @@ func (s *service) GetRealmRole(ctx context.Context, realm, roleName string) (Rol
 	if err != nil {
 		return RoleInfo{}, err
 	}
-	if err := validateIdentifier(roleName); err != nil {
+	if err = validateIdentifier(roleName); err != nil {
 		return RoleInfo{}, err
 	}
 	role, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.Role, error) {
@@ -48,10 +48,10 @@ func (s *service) GetUsersInRole(ctx context.Context, realm, roleName string, fi
 	if err != nil {
 		return nil, err
 	}
-	if err := validateIdentifier(roleName); err != nil {
+	if err = validateIdentifier(roleName); err != nil {
 		return nil, err
 	}
-	if err := validatePagination(first, pageSize); err != nil {
+	if err = validatePagination(first, pageSize); err != nil {
 		return nil, err
 	}
 	users, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.User, error) {
@@ -68,13 +68,13 @@ func (s *service) GetUsersInClientRole(ctx context.Context, realm, clientUUID, r
 	if err != nil {
 		return nil, err
 	}
-	if err := validateIdentifier(clientUUID); err != nil {
+	if err = validateIdentifier(clientUUID); err != nil {
 		return nil, err
 	}
-	if err := validateIdentifier(roleName); err != nil {
+	if err = validateIdentifier(roleName); err != nil {
 		return nil, err
 	}
-	if err := validatePagination(first, pageSize); err != nil {
+	if err = validatePagination(first, pageSize); err != nil {
 		return nil, err
 	}
 	users, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.User, error) {

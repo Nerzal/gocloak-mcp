@@ -56,7 +56,7 @@ func registerClientCoreTools(server *mcp.Server, deps toolDeps) {
 		}
 		return executeTool(ctx, deps, "list_clients", func(rCtx context.Context) (clientsOutput, error) {
 			clients, callErr := deps.service.ListClients(rCtx, in.Realm, first, maxSize, keycloak.ClientFilter{ClientID: in.ClientID})
-			return clientsOutput{Clients: clients}, callErr
+			return clientsOutput{Clients: clients}, sanitizeErr(callErr)
 		})
 	})
 
@@ -66,7 +66,8 @@ func registerClientCoreTools(server *mcp.Server, deps toolDeps) {
 		Annotations: deps.annotations,
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in clientUUIDInput) (*mcp.CallToolResult, keycloak.ClientInfo, error) {
 		return executeTool(ctx, deps, "get_client", func(rCtx context.Context) (keycloak.ClientInfo, error) {
-			return deps.service.GetClient(rCtx, in.Realm, in.ClientUUID)
+			res, callErr := deps.service.GetClient(rCtx, in.Realm, in.ClientUUID)
+			return res, sanitizeErr(callErr)
 		})
 	})
 
@@ -76,7 +77,8 @@ func registerClientCoreTools(server *mcp.Server, deps toolDeps) {
 		Annotations: deps.annotations,
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in clientUUIDInput) (*mcp.CallToolResult, keycloak.User, error) {
 		return executeTool(ctx, deps, "get_client_service_account", func(rCtx context.Context) (keycloak.User, error) {
-			return deps.service.GetClientServiceAccount(rCtx, in.Realm, in.ClientUUID)
+			res, callErr := deps.service.GetClientServiceAccount(rCtx, in.Realm, in.ClientUUID)
+			return res, sanitizeErr(callErr)
 		})
 	})
 }
@@ -93,7 +95,7 @@ func registerClientRoleAndScopeTools(server *mcp.Server, deps toolDeps) {
 		}
 		return executeTool(ctx, deps, "list_client_roles", func(rCtx context.Context) (rolesOutput, error) {
 			roles, callErr := deps.service.ListClientRoles(rCtx, in.Realm, in.ClientUUID, first, maxSize, in.Search)
-			return rolesOutput{Roles: roles}, callErr
+			return rolesOutput{Roles: roles}, sanitizeErr(callErr)
 		})
 	})
 
@@ -104,7 +106,7 @@ func registerClientRoleAndScopeTools(server *mcp.Server, deps toolDeps) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, clientScopesOutput, error) {
 		return executeTool(ctx, deps, "list_client_scopes", func(rCtx context.Context) (clientScopesOutput, error) {
 			scopes, callErr := deps.service.ListClientScopes(rCtx, in.Realm)
-			return clientScopesOutput{ClientScopes: scopes}, callErr
+			return clientScopesOutput{ClientScopes: scopes}, sanitizeErr(callErr)
 		})
 	})
 
@@ -114,7 +116,8 @@ func registerClientRoleAndScopeTools(server *mcp.Server, deps toolDeps) {
 		Annotations: deps.annotations,
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in scopeIDInput) (*mcp.CallToolResult, keycloak.ClientScopeInfo, error) {
 		return executeTool(ctx, deps, "get_client_scope", func(rCtx context.Context) (keycloak.ClientScopeInfo, error) {
-			return deps.service.GetClientScope(rCtx, in.Realm, in.ScopeID)
+			res, callErr := deps.service.GetClientScope(rCtx, in.Realm, in.ScopeID)
+			return res, sanitizeErr(callErr)
 		})
 	})
 }

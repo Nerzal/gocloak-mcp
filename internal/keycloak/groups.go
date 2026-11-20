@@ -11,10 +11,10 @@ func (s *service) ListGroups(ctx context.Context, realm string, first, pageSize 
 	if err != nil {
 		return nil, err
 	}
-	if err := validatePagination(first, pageSize); err != nil {
+	if err = validatePagination(first, pageSize); err != nil {
 		return nil, err
 	}
-	if err := validateFilterString(search); err != nil {
+	if err = validateFilterString(search); err != nil {
 		return nil, err
 	}
 	groups, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Group, error) {
@@ -31,7 +31,7 @@ func (s *service) CountGroups(ctx context.Context, realm, search string) (int, e
 	if err != nil {
 		return 0, err
 	}
-	if err := validateFilterString(search); err != nil {
+	if err = validateFilterString(search); err != nil {
 		return 0, err
 	}
 	return runWithTokenRetry(ctx, s.tokens, func(token string) (int, error) {
@@ -44,7 +44,7 @@ func (s *service) GetGroup(ctx context.Context, realm, groupID string) (GroupInf
 	if err != nil {
 		return GroupInfo{}, err
 	}
-	if err := validateIdentifier(groupID); err != nil {
+	if err = validateIdentifier(groupID); err != nil {
 		return GroupInfo{}, err
 	}
 	group, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.Group, error) {
@@ -61,10 +61,10 @@ func (s *service) GetGroupMembers(ctx context.Context, realm, groupID string, fi
 	if err != nil {
 		return nil, err
 	}
-	if err := validateIdentifier(groupID); err != nil {
+	if err = validateIdentifier(groupID); err != nil {
 		return nil, err
 	}
-	if err := validatePagination(first, pageSize); err != nil {
+	if err = validatePagination(first, pageSize); err != nil {
 		return nil, err
 	}
 	users, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.User, error) {
@@ -81,7 +81,7 @@ func (s *service) GetGroupRoles(ctx context.Context, realm, groupID string) (Rol
 	if err != nil {
 		return RoleMappings{}, err
 	}
-	if err := validateIdentifier(groupID); err != nil {
+	if err = validateIdentifier(groupID); err != nil {
 		return RoleMappings{}, err
 	}
 	mappings, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.MappingsRepresentation, error) {

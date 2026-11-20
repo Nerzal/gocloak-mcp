@@ -31,7 +31,7 @@ func (s *service) GetRealmInfo(ctx context.Context, realm string) (RealmInfo, er
 	return mapRealm(rep), nil
 }
 
-func (s *service) ListEvents(ctx context.Context, realm string, first, pageSize int, filter EventFilter) ([]EventInfo, error) {
+func (s *service) ListEvents(ctx context.Context, realm string, first, pageSize int, filter *EventFilter) ([]EventInfo, error) {
 	targetRealm, err := s.resolveRealm(realm)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func (s *service) ListEvents(ctx context.Context, realm string, first, pageSize 
 	if err != nil {
 		return nil, err
 	}
-	if err := validateEventFilter(filter); err != nil {
+	if err = validateEventFilter(filter); err != nil {
 		return nil, err
 	}
 	events, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.EventRepresentation, error) {
@@ -52,7 +52,7 @@ func (s *service) ListEvents(ctx context.Context, realm string, first, pageSize 
 	return mapEvents(events), nil
 }
 
-func (s *service) ListAdminEvents(ctx context.Context, realm string, first, pageSize int, filter AdminEventFilter) ([]AdminEventInfo, error) {
+func (s *service) ListAdminEvents(ctx context.Context, realm string, first, pageSize int, filter *AdminEventFilter) ([]AdminEventInfo, error) {
 	targetRealm, err := s.resolveRealm(realm)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (s *service) ListAdminEvents(ctx context.Context, realm string, first, page
 	if err != nil {
 		return nil, err
 	}
-	if err := validateAdminEventFilter(filter); err != nil {
+	if err = validateAdminEventFilter(filter); err != nil {
 		return nil, err
 	}
 	events, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.AdminEventRepresentation, error) {
@@ -80,7 +80,10 @@ func validatePaginationInt32(first, pageSize int) (first32, max32 int32, err err
 	return int32(first), int32(pageSize), nil
 }
 
-func validateEventFilter(filter EventFilter) error {
+func validateEventFilter(filter *EventFilter) error {
+	if filter == nil {
+		return nil
+	}
 	if err := validateFilterSlice(filter.Type); err != nil {
 		return err
 	}
@@ -92,7 +95,10 @@ func validateEventFilter(filter EventFilter) error {
 	return nil
 }
 
-func validateAdminEventFilter(filter AdminEventFilter) error {
+func validateAdminEventFilter(filter *AdminEventFilter) error {
+	if filter == nil {
+		return nil
+	}
 	if err := validateFilterSlice(filter.OperationTypes); err != nil {
 		return err
 	}
@@ -126,32 +132,32 @@ func (s *service) fetchRealm(ctx context.Context, token, realm string) (*gocloak
 	return rep, nil
 }
 
-func (s *service) fetchEvents(ctx context.Context, token, realm string, first, pageSize int32, filter EventFilter) ([]*gocloak.EventRepresentation, error) {
-	events, err := s.client.GetEvents(ctx, token, realm, gocloak.GetEventsParams{
-		Type:     filter.Type,
-		Client:   optionalStringPtr(filter.Client),
-		UserID:   optionalStringPtr(filter.UserID),
-		DateFrom: optionalStringPtr(filter.DateFrom),
-		DateTo:   optionalStringPtr(filter.DateTo),
-		First:    &first,
-		Max:      &pageSize,
-	})
+func (s *service) fetchEvents(ctx context.Context, token, realm string, first, pageSize int32, filter *EventFilter) ([]*gocloak.EventRepresentation, error) {
+	params := gocloak.GetEventsParams{First: &first, Max: &pageSize}
+	if filter != nil {
+		params.Type = filter.Type
+		params.Client = optionalStringPtr(filter.Client)
+		params.UserID = optionalStringPtr(filter.UserID)
+		params.DateFrom = optionalStringPtr(filter.DateFrom)
+		params.DateTo = optionalStringPtr(filter.DateTo)
+	}
+	events, err := s.client.GetEvents(ctx, token, realm, params)
 	if err != nil {
 		return nil, classifyUpstreamError(err)
 	}
 	return events, nil
 }
 
-func (s *service) fetchAdminEvents(ctx context.Context, token, realm string, first, pageSize int32, filter AdminEventFilter) ([]*gocloak.AdminEventRepresentation, error) {
-	events, err := s.client.GetAdminEvents(ctx, token, realm, gocloak.GetAdminEventsParams{
-		OperationTypes: filter.OperationTypes,
-		ResourceTypes:  filter.ResourceTypes,
-		ResourcePath:   optionalStringPtr(filter.ResourcePath),
-		DateFrom:       optionalStringPtr(filter.DateFrom),
-		DateTo:         optionalStringPtr(filter.DateTo),
-		First:          &first,
-		Max:            &pageSize,
-	})
+func (s *service) fetchAdminEvents(ctx context.Context, token, realm string, first, pageSize int32, filter *AdminEventFilter) ([]*gocloak.AdminEventRepresentation, error) {
+	params := gocloak.GetAdminEventsParams{First: &first, Max: &pageSize}
+	if filter != nil {
+		params.OperationTypes = filter.OperationTypes
+		params.ResourceTypes = filter.ResourceTypes
+		params.ResourcePath = optionalStringPtr(filter.ResourcePath)
+		params.DateFrom = optionalStringPtr(filter.DateFrom)
+		params.DateTo = optionalStringPtr(filter.DateTo)
+	}
+	events, err := s.client.GetAdminEvents(ctx, token, realm, params)
 	if err != nil {
 		return nil, classifyUpstreamError(err)
 	}

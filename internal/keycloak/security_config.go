@@ -25,7 +25,7 @@ func (s *service) GetFlowExecutions(ctx context.Context, realm, flowAlias string
 	if err != nil {
 		return nil, err
 	}
-	if err := validateIdentifier(flowAlias); err != nil {
+	if err = validateIdentifier(flowAlias); err != nil {
 		return nil, err
 	}
 	executions, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.ModifyAuthenticationExecutionRepresentation, error) {
@@ -70,7 +70,7 @@ func (s *service) GetIdentityProvider(ctx context.Context, realm, alias string) 
 	if err != nil {
 		return IdentityProviderInfo{}, err
 	}
-	if err := validateIdentifier(alias); err != nil {
+	if err = validateIdentifier(alias); err != nil {
 		return IdentityProviderInfo{}, err
 	}
 	provider, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.IdentityProviderRepresentation, error) {
@@ -87,10 +87,10 @@ func (s *service) ListOrganizations(ctx context.Context, realm string, first, pa
 	if err != nil {
 		return nil, err
 	}
-	if err := validatePagination(first, pageSize); err != nil {
+	if err = validatePagination(first, pageSize); err != nil {
 		return nil, err
 	}
-	if err := validateFilterString(search); err != nil {
+	if err = validateFilterString(search); err != nil {
 		return nil, err
 	}
 	orgs, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.OrganizationRepresentation, error) {
@@ -107,13 +107,13 @@ func (s *service) GetOrganizationMembers(ctx context.Context, realm, orgID strin
 	if err != nil {
 		return nil, err
 	}
-	if err := validateIdentifier(orgID); err != nil {
+	if err = validateIdentifier(orgID); err != nil {
 		return nil, err
 	}
-	if err := validatePagination(first, pageSize); err != nil {
+	if err = validatePagination(first, pageSize); err != nil {
 		return nil, err
 	}
-	if err := validateFilterString(search); err != nil {
+	if err = validateFilterString(search); err != nil {
 		return nil, err
 	}
 	members, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.MemberRepresentation, error) {

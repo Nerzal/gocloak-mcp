@@ -53,7 +53,7 @@ func registerRealmInfoTools(server *mcp.Server, deps toolDeps) {
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, realmsOutput, error) {
 		return executeTool(ctx, deps, "list_realms", func(rCtx context.Context) (realmsOutput, error) {
 			realms, callErr := deps.service.ListRealms(rCtx)
-			return realmsOutput{Realms: realms}, callErr
+			return realmsOutput{Realms: realms}, sanitizeErr(callErr)
 		})
 	})
 
@@ -63,7 +63,8 @@ func registerRealmInfoTools(server *mcp.Server, deps toolDeps) {
 		Annotations: deps.annotations,
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, keycloak.RealmInfo, error) {
 		return executeTool(ctx, deps, "get_realm_info", func(rCtx context.Context) (keycloak.RealmInfo, error) {
-			return deps.service.GetRealmInfo(rCtx, in.Realm)
+			res, callErr := deps.service.GetRealmInfo(rCtx, in.Realm)
+			return res, sanitizeErr(callErr)
 		})
 	})
 }
@@ -82,8 +83,8 @@ func registerEventTools(server *mcp.Server, deps toolDeps) {
 			Type: in.Type, Client: in.Client, UserID: in.UserID, DateFrom: in.DateFrom, DateTo: in.DateTo,
 		}
 		return executeTool(ctx, deps, "list_events", func(rCtx context.Context) (eventsOutput, error) {
-			events, callErr := deps.service.ListEvents(rCtx, in.Realm, first, maxSize, filter)
-			return eventsOutput{Events: events}, callErr
+			events, callErr := deps.service.ListEvents(rCtx, in.Realm, first, maxSize, &filter)
+			return eventsOutput{Events: events}, sanitizeErr(callErr)
 		})
 	})
 
@@ -101,8 +102,8 @@ func registerEventTools(server *mcp.Server, deps toolDeps) {
 			ResourcePath: in.ResourcePath, DateFrom: in.DateFrom, DateTo: in.DateTo,
 		}
 		return executeTool(ctx, deps, "list_admin_events", func(rCtx context.Context) (adminEventsOutput, error) {
-			events, callErr := deps.service.ListAdminEvents(rCtx, in.Realm, first, maxSize, filter)
-			return adminEventsOutput{Events: events}, callErr
+			events, callErr := deps.service.ListAdminEvents(rCtx, in.Realm, first, maxSize, &filter)
+			return adminEventsOutput{Events: events}, sanitizeErr(callErr)
 		})
 	})
 }

@@ -61,8 +61,8 @@ type Service interface {
 	// Realms & Events
 	ListRealms(ctx context.Context) ([]RealmInfo, error)
 	GetRealmInfo(ctx context.Context, realm string) (RealmInfo, error)
-	ListEvents(ctx context.Context, realm string, first, pageSize int, filter EventFilter) ([]EventInfo, error)
-	ListAdminEvents(ctx context.Context, realm string, first, pageSize int, filter AdminEventFilter) ([]AdminEventInfo, error)
+	ListEvents(ctx context.Context, realm string, first, pageSize int, filter *EventFilter) ([]EventInfo, error)
+	ListAdminEvents(ctx context.Context, realm string, first, pageSize int, filter *AdminEventFilter) ([]AdminEventInfo, error)
 
 	// Authentication Flows, Required Actions, Identity Providers & Organizations
 	ListAuthenticationFlows(ctx context.Context, realm string) ([]AuthFlowInfo, error)

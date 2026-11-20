@@ -53,7 +53,7 @@ func registerRealmRoleQueries(server *mcp.Server, deps toolDeps) {
 		}
 		return executeTool(ctx, deps, "list_realm_roles", func(rCtx context.Context) (rolesOutput, error) {
 			roles, callErr := deps.service.ListRealmRoles(rCtx, in.Realm, first, maxSize, in.Search)
-			return rolesOutput{Roles: roles}, callErr
+			return rolesOutput{Roles: roles}, sanitizeErr(callErr)
 		})
 	})
 
@@ -63,7 +63,8 @@ func registerRealmRoleQueries(server *mcp.Server, deps toolDeps) {
 		Annotations: deps.annotations,
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in roleNameInput) (*mcp.CallToolResult, keycloak.RoleInfo, error) {
 		return executeTool(ctx, deps, "get_realm_role", func(rCtx context.Context) (keycloak.RoleInfo, error) {
-			return deps.service.GetRealmRole(rCtx, in.Realm, in.RoleName)
+			res, callErr := deps.service.GetRealmRole(rCtx, in.Realm, in.RoleName)
+			return res, sanitizeErr(callErr)
 		})
 	})
 }
@@ -80,7 +81,7 @@ func registerRoleMemberQueries(server *mcp.Server, deps toolDeps) {
 		}
 		return executeTool(ctx, deps, "get_users_in_role", func(rCtx context.Context) (usersOutput, error) {
 			users, callErr := deps.service.GetUsersInRole(rCtx, in.Realm, in.RoleName, first, maxSize)
-			return usersOutput{Users: users}, callErr
+			return usersOutput{Users: users}, sanitizeErr(callErr)
 		})
 	})
 
@@ -95,7 +96,7 @@ func registerRoleMemberQueries(server *mcp.Server, deps toolDeps) {
 		}
 		return executeTool(ctx, deps, "get_users_in_client_role", func(rCtx context.Context) (usersOutput, error) {
 			users, callErr := deps.service.GetUsersInClientRole(rCtx, in.Realm, in.ClientUUID, in.RoleName, first, maxSize)
-			return usersOutput{Users: users}, callErr
+			return usersOutput{Users: users}, sanitizeErr(callErr)
 		})
 	})
 }

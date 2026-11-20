@@ -98,6 +98,13 @@ func logToolFailure(logger *slog.Logger, tool string) {
 	}
 }
 
+func sanitizeErr(err error) error {
+	if err != nil {
+		return errors.New("keycloak request failed")
+	}
+	return nil
+}
+
 func validatePage(input pageInput) (first, pageSize int, err error) {
 	if input.First < 0 {
 		return 0, 0, errors.New("first must not be negative")

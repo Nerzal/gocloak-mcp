@@ -11,10 +11,10 @@ func (s *service) ListClients(ctx context.Context, realm string, first, pageSize
 	if err != nil {
 		return nil, err
 	}
-	if err := validatePagination(first, pageSize); err != nil {
+	if err = validatePagination(first, pageSize); err != nil {
 		return nil, err
 	}
-	if err := validateFilterString(filter.ClientID); err != nil {
+	if err = validateFilterString(filter.ClientID); err != nil {
 		return nil, err
 	}
 	clients, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Client, error) {
@@ -31,7 +31,7 @@ func (s *service) GetClient(ctx context.Context, realm, clientUUID string) (Clie
 	if err != nil {
 		return ClientInfo{}, err
 	}
-	if err := validateIdentifier(clientUUID); err != nil {
+	if err = validateIdentifier(clientUUID); err != nil {
 		return ClientInfo{}, err
 	}
 	client, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.Client, error) {
@@ -48,7 +48,7 @@ func (s *service) GetClientServiceAccount(ctx context.Context, realm, clientUUID
 	if err != nil {
 		return User{}, err
 	}
-	if err := validateIdentifier(clientUUID); err != nil {
+	if err = validateIdentifier(clientUUID); err != nil {
 		return User{}, err
 	}
 	user, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.User, error) {
@@ -65,13 +65,13 @@ func (s *service) ListClientRoles(ctx context.Context, realm, clientUUID string,
 	if err != nil {
 		return nil, err
 	}
-	if err := validateIdentifier(clientUUID); err != nil {
+	if err = validateIdentifier(clientUUID); err != nil {
 		return nil, err
 	}
-	if err := validatePagination(first, pageSize); err != nil {
+	if err = validatePagination(first, pageSize); err != nil {
 		return nil, err
 	}
-	if err := validateFilterString(search); err != nil {
+	if err = validateFilterString(search); err != nil {
 		return nil, err
 	}
 	roles, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Role, error) {
@@ -102,7 +102,7 @@ func (s *service) GetClientScope(ctx context.Context, realm, scopeID string) (Cl
 	if err != nil {
 		return ClientScopeInfo{}, err
 	}
-	if err := validateIdentifier(scopeID); err != nil {
+	if err = validateIdentifier(scopeID); err != nil {
 		return ClientScopeInfo{}, err
 	}
 	scope, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.ClientScope, error) {

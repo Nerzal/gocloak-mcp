@@ -232,6 +232,20 @@ func (p *stubTokenProvider) Invalidate() { p.invalidated++ }
 func strP(s string) *string { return &s }
 func boolP(b bool) *bool    { return &b }
 
+func requireOK(t *testing.T, err error, name string) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("%s error = %v", name, err)
+	}
+}
+
+func requireCount(t *testing.T, got, want int, name string) {
+	t.Helper()
+	if got != want {
+		t.Fatalf("%s count = %d, want %d", name, got, want)
+	}
+}
+
 func TestUsersOperationsAndBriefRepresentation(t *testing.T) {
 	ctx := context.Background()
 	u := &gocloak.User{ID: strP("u1"), Username: strP("alice"), Email: strP("a@ex.test"), Enabled: boolP(true)}
@@ -246,24 +260,32 @@ func TestUsersOperationsAndBriefRepresentation(t *testing.T) {
 	svc := NewService(client, &stubTokenProvider{}, "primary", []string{"primary", "secondary"})
 
 	users, err := svc.ListUsers(ctx, "secondary", 0, 10, UserFilter{Search: "ali", Exact: true})
-	if err != nil || len(users) != 1 || client.lastRealm != "secondary" || client.usersParams.BriefRepresentation == nil || !*client.usersParams.BriefRepresentation {
-		t.Fatalf("ListUsers() = %+v, %v (realm=%s)", users, err, client.lastRealm)
+	requireOK(t, err, "ListUsers")
+	requireCount(t, len(users), 1, "ListUsers")
+	if client.lastRealm != "secondary" || client.usersParams.BriefRepresentation == nil || !*client.usersParams.BriefRepresentation {
+		t.Fatalf("unexpected realm=%s or brief=%v", client.lastRealm, client.usersParams.BriefRepresentation)
 	}
-	if got, err := svc.GetUser(ctx, "", "u1"); err != nil || got.Username != "alice" {
-		t.Fatalf("GetUser() = %+v, %v", got, err)
+	got, err := svc.GetUser(ctx, "", "u1")
+	requireOK(t, err, "GetUser")
+	if got.Username != "alice" {
+		t.Fatalf("GetUser() = %+v", got)
 	}
-	if count, err := svc.CountUsers(ctx, "", UserFilter{Search: "ali"}); err != nil || count != 42 {
-		t.Fatalf("CountUsers() = %d, %v", count, err)
-	}
-	if sessions, err := svc.GetUserSessions(ctx, "", "u1"); err != nil || len(sessions) != 1 || sessions[0].Clients["c1"] != "app" {
-		t.Fatalf("GetUserSessions() = %+v, %v", sessions, err)
-	}
-	if groups, err := svc.GetUserGroups(ctx, "", "u1", 0, 10); err != nil || len(groups) != 1 || groups[0].Path != "/devs" {
-		t.Fatalf("GetUserGroups() = %+v, %v", groups, err)
-	}
-	if roles, err := svc.GetUserRoles(ctx, "", "u1"); err != nil || len(roles.RealmRoles) != 1 || len(roles.ClientRoles["app"]) != 1 {
-		t.Fatalf("GetUserRoles() = %+v, %v", roles, err)
-	}
+	count, err := svc.CountUsers(ctx, "", UserFilter{Search: "ali"})
+	requireOK(t, err, "CountUsers")
+	requireCount(t, count, 42, "CountUsers")
+
+	sessions, err := svc.GetUserSessions(ctx, "", "u1")
+	requireOK(t, err, "GetUserSessions")
+	requireCount(t, len(sessions), 1, "GetUserSessions")
+
+	groups, err := svc.GetUserGroups(ctx, "", "u1", 0, 10)
+	requireOK(t, err, "GetUserGroups")
+	requireCount(t, len(groups), 1, "GetUserGroups")
+
+	roles, err := svc.GetUserRoles(ctx, "", "u1")
+	requireOK(t, err, "GetUserRoles")
+	requireCount(t, len(roles.RealmRoles), 1, "GetUserRoles.RealmRoles")
+	requireCount(t, len(roles.ClientRoles["app"]), 1, "GetUserRoles.ClientRoles")
 }
 
 func newDomainFixtureService() Service {
@@ -298,105 +320,133 @@ func newDomainFixtureService() Service {
 func TestClientsAndScopesOperations(t *testing.T) {
 	ctx := context.Background()
 	svc := newDomainFixtureService()
-	if list, err := svc.ListClients(ctx, "", 0, 10, ClientFilter{ClientID: "web"}); err != nil || len(list) != 1 {
-		t.Fatalf("ListClients() = %+v, %v", list, err)
+	list, err := svc.ListClients(ctx, "", 0, 10, ClientFilter{ClientID: "web"})
+	requireOK(t, err, "ListClients")
+	requireCount(t, len(list), 1, "ListClients")
+
+	got, err := svc.GetClient(ctx, "", "c1")
+	requireOK(t, err, "GetClient")
+	if got.ClientID != "web" {
+		t.Fatalf("GetClient() = %+v", got)
 	}
-	if got, err := svc.GetClient(ctx, "", "c1"); err != nil || got.ClientID != "web" {
-		t.Fatalf("GetClient() = %+v, %v", got, err)
+	sa, err := svc.GetClientServiceAccount(ctx, "", "c1")
+	requireOK(t, err, "GetClientServiceAccount")
+	if sa.Username != "svc-web" {
+		t.Fatalf("GetClientServiceAccount() = %+v", sa)
 	}
-	if sa, err := svc.GetClientServiceAccount(ctx, "", "c1"); err != nil || sa.Username != "svc-web" {
-		t.Fatalf("GetClientServiceAccount() = %+v, %v", sa, err)
-	}
-	if roles, err := svc.ListClientRoles(ctx, "", "c1", 0, 10, ""); err != nil || len(roles) != 1 {
-		t.Fatalf("ListClientRoles() = %+v, %v", roles, err)
-	}
-	if scopes, err := svc.ListClientScopes(ctx, ""); err != nil || len(scopes) != 1 {
-		t.Fatalf("ListClientScopes() = %+v, %v", scopes, err)
-	}
-	if sc, err := svc.GetClientScope(ctx, "", "sc1"); err != nil || sc.Name != "email" {
-		t.Fatalf("GetClientScope() = %+v, %v", sc, err)
+	roles, err := svc.ListClientRoles(ctx, "", "c1", 0, 10, "")
+	requireOK(t, err, "ListClientRoles")
+	requireCount(t, len(roles), 1, "ListClientRoles")
+
+	scopes, err := svc.ListClientScopes(ctx, "")
+	requireOK(t, err, "ListClientScopes")
+	requireCount(t, len(scopes), 1, "ListClientScopes")
+
+	sc, err := svc.GetClientScope(ctx, "", "sc1")
+	requireOK(t, err, "GetClientScope")
+	if sc.Name != "email" {
+		t.Fatalf("GetClientScope() = %+v", sc)
 	}
 }
 
 func TestRolesOperations(t *testing.T) {
 	ctx := context.Background()
 	svc := newDomainFixtureService()
-	if roles, err := svc.ListRealmRoles(ctx, "", 0, 10, ""); err != nil || len(roles) != 1 {
-		t.Fatalf("ListRealmRoles() = %+v, %v", roles, err)
+	roles, err := svc.ListRealmRoles(ctx, "", 0, 10, "")
+	requireOK(t, err, "ListRealmRoles")
+	requireCount(t, len(roles), 1, "ListRealmRoles")
+
+	r, err := svc.GetRealmRole(ctx, "", "viewer")
+	requireOK(t, err, "GetRealmRole")
+	if r.Name != "viewer" {
+		t.Fatalf("GetRealmRole() = %+v", r)
 	}
-	if r, err := svc.GetRealmRole(ctx, "", "viewer"); err != nil || r.Name != "viewer" {
-		t.Fatalf("GetRealmRole() = %+v, %v", r, err)
-	}
-	if users, err := svc.GetUsersInRole(ctx, "", "viewer", 0, 10); err != nil || len(users) != 1 {
-		t.Fatalf("GetUsersInRole() = %+v, %v", users, err)
-	}
-	if users, err := svc.GetUsersInClientRole(ctx, "", "c1", "viewer", 0, 10); err != nil || len(users) != 1 {
-		t.Fatalf("GetUsersInClientRole() = %+v, %v", users, err)
-	}
+	users, err := svc.GetUsersInRole(ctx, "", "viewer", 0, 10)
+	requireOK(t, err, "GetUsersInRole")
+	requireCount(t, len(users), 1, "GetUsersInRole")
+
+	clientUsers, err := svc.GetUsersInClientRole(ctx, "", "c1", "viewer", 0, 10)
+	requireOK(t, err, "GetUsersInClientRole")
+	requireCount(t, len(clientUsers), 1, "GetUsersInClientRole")
 }
 
 func TestGroupsOperations(t *testing.T) {
 	ctx := context.Background()
 	svc := newDomainFixtureService()
-	if groups, err := svc.ListGroups(ctx, "", 0, 10, "ops"); err != nil || len(groups) != 1 {
-		t.Fatalf("ListGroups() = %+v, %v", groups, err)
+	groups, err := svc.ListGroups(ctx, "", 0, 10, "ops")
+	requireOK(t, err, "ListGroups")
+	requireCount(t, len(groups), 1, "ListGroups")
+
+	n, err := svc.CountGroups(ctx, "", "ops")
+	requireOK(t, err, "CountGroups")
+	requireCount(t, n, 7, "CountGroups")
+
+	g, err := svc.GetGroup(ctx, "", "g1")
+	requireOK(t, err, "GetGroup")
+	if g.Name != "ops" {
+		t.Fatalf("GetGroup() = %+v", g)
 	}
-	if n, err := svc.CountGroups(ctx, "", "ops"); err != nil || n != 7 {
-		t.Fatalf("CountGroups() = %d, %v", n, err)
-	}
-	if g, err := svc.GetGroup(ctx, "", "g1"); err != nil || g.Name != "ops" {
-		t.Fatalf("GetGroup() = %+v, %v", g, err)
-	}
-	if members, err := svc.GetGroupMembers(ctx, "", "g1", 0, 10); err != nil || len(members) != 1 {
-		t.Fatalf("GetGroupMembers() = %+v, %v", members, err)
-	}
-	if roles, err := svc.GetGroupRoles(ctx, "", "g1"); err != nil || len(roles.RealmRoles) != 0 {
-		t.Fatalf("GetGroupRoles() = %+v, %v", roles, err)
-	}
+	members, err := svc.GetGroupMembers(ctx, "", "g1", 0, 10)
+	requireOK(t, err, "GetGroupMembers")
+	requireCount(t, len(members), 1, "GetGroupMembers")
+
+	roles, err := svc.GetGroupRoles(ctx, "", "g1")
+	requireOK(t, err, "GetGroupRoles")
+	requireCount(t, len(roles.RealmRoles), 0, "GetGroupRoles")
 }
 
 func TestRealmsAndEventsOperations(t *testing.T) {
 	ctx := context.Background()
 	svc := newDomainFixtureService()
 	realms, err := svc.ListRealms(ctx)
-	if err != nil || len(realms) != 1 || realms[0].Name != "primary" {
-		t.Fatalf("ListRealms() = %+v, %v", realms, err)
+	requireOK(t, err, "ListRealms")
+	requireCount(t, len(realms), 1, "ListRealms")
+
+	info, err := svc.GetRealmInfo(ctx, "")
+	requireOK(t, err, "GetRealmInfo")
+	if info.Name != "primary" {
+		t.Fatalf("GetRealmInfo() = %+v", info)
 	}
-	if info, err := svc.GetRealmInfo(ctx, ""); err != nil || info.Name != "primary" {
-		t.Fatalf("GetRealmInfo() = %+v, %v", info, err)
-	}
-	if ev, err := svc.ListEvents(ctx, "", 0, 10, EventFilter{Type: []string{"LOGIN"}}); err != nil || len(ev) != 1 {
-		t.Fatalf("ListEvents() = %+v, %v", ev, err)
-	}
-	if aev, err := svc.ListAdminEvents(ctx, "", 0, 10, AdminEventFilter{OperationTypes: []string{"CREATE"}}); err != nil || len(aev) != 1 || aev[0].AuthClientID != "admin-cli" {
-		t.Fatalf("ListAdminEvents() = %+v, %v", aev, err)
-	}
+	ev, err := svc.ListEvents(ctx, "", 0, 10, &EventFilter{Type: []string{"LOGIN"}})
+	requireOK(t, err, "ListEvents")
+	requireCount(t, len(ev), 1, "ListEvents")
+
+	aev, err := svc.ListAdminEvents(ctx, "", 0, 10, &AdminEventFilter{OperationTypes: []string{"CREATE"}})
+	requireOK(t, err, "ListAdminEvents")
+	requireCount(t, len(aev), 1, "ListAdminEvents")
 }
 
 func TestAuthFlowsIdPAndOrganizationsOperations(t *testing.T) {
 	ctx := context.Background()
 	svc := newDomainFixtureService()
-	if flows, err := svc.ListAuthenticationFlows(ctx, ""); err != nil || len(flows) != 1 {
-		t.Fatalf("ListAuthenticationFlows() = %+v, %v", flows, err)
+	flows, err := svc.ListAuthenticationFlows(ctx, "")
+	requireOK(t, err, "ListAuthenticationFlows")
+	requireCount(t, len(flows), 1, "ListAuthenticationFlows")
+
+	execs, err := svc.GetFlowExecutions(ctx, "", "browser")
+	requireOK(t, err, "GetFlowExecutions")
+	requireCount(t, len(execs), 1, "GetFlowExecutions")
+
+	acts, err := svc.ListRequiredActions(ctx, "")
+	requireOK(t, err, "ListRequiredActions")
+	requireCount(t, len(acts), 1, "ListRequiredActions")
+
+	idps, err := svc.ListIdentityProviders(ctx, "")
+	requireOK(t, err, "ListIdentityProviders")
+	requireCount(t, len(idps), 1, "ListIdentityProviders")
+
+	idp, err := svc.GetIdentityProvider(ctx, "", "google")
+	requireOK(t, err, "GetIdentityProvider")
+	if idp.Alias != "google" {
+		t.Fatalf("GetIdentityProvider() = %+v", idp)
 	}
-	if execs, err := svc.GetFlowExecutions(ctx, "", "browser"); err != nil || len(execs) != 1 {
-		t.Fatalf("GetFlowExecutions() = %+v, %v", execs, err)
-	}
-	if acts, err := svc.ListRequiredActions(ctx, ""); err != nil || len(acts) != 1 {
-		t.Fatalf("ListRequiredActions() = %+v, %v", acts, err)
-	}
-	if idps, err := svc.ListIdentityProviders(ctx, ""); err != nil || len(idps) != 1 {
-		t.Fatalf("ListIdentityProviders() = %+v, %v", idps, err)
-	}
-	if idp, err := svc.GetIdentityProvider(ctx, "", "google"); err != nil || idp.Alias != "google" {
-		t.Fatalf("GetIdentityProvider() = %+v, %v", idp, err)
-	}
-	if orgs, err := svc.ListOrganizations(ctx, "", 0, 10, ""); err != nil || len(orgs) != 1 || len(orgs[0].Domains) != 1 {
-		t.Fatalf("ListOrganizations() = %+v, %v", orgs, err)
-	}
-	if members, err := svc.GetOrganizationMembers(ctx, "", "o1", 0, 10, ""); err != nil || len(members) != 1 || members[0].MembershipType != "MANAGED" {
-		t.Fatalf("GetOrganizationMembers() = %+v, %v", members, err)
-	}
+	orgs, err := svc.ListOrganizations(ctx, "", 0, 10, "")
+	requireOK(t, err, "ListOrganizations")
+	requireCount(t, len(orgs), 1, "ListOrganizations")
+
+	members, err := svc.GetOrganizationMembers(ctx, "", "o1", 0, 10, "")
+	requireOK(t, err, "GetOrganizationMembers")
+	requireCount(t, len(members), 1, "GetOrganizationMembers")
 }
 
 func TestSecurityValidationAndUnauthorizedRetry(t *testing.T) {

@@ -38,17 +38,17 @@ func run(logger *slog.Logger) error {
 		return errors.New("invalid configuration")
 	}
 
-	client := newKeycloakClient(cfg)
+	client := newKeycloakClient(&cfg)
 	tokenProvider := keycloak.NewTokenProvider(client, cfg.Realm, cfg.ClientID, cfg.ClientSecret, cfg.RequestTimeout)
 	service := keycloak.NewService(client, tokenProvider, cfg.Realm, cfg.AllowedRealms)
 	server := mcpserver.New(service, cfg.RequestTimeout, logger)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	return serve(ctx, server, cfg, logger)
+	return serve(ctx, server, &cfg, logger)
 }
 
-func serve(ctx context.Context, server *mcp.Server, cfg config.Config, logger *slog.Logger) error {
+func serve(ctx context.Context, server *mcp.Server, cfg *config.Config, logger *slog.Logger) error {
 	if cfg.Transport == config.TransportHTTP {
 		return serveHTTP(ctx, server, cfg, logger)
 	}
@@ -59,7 +59,7 @@ func serve(ctx context.Context, server *mcp.Server, cfg config.Config, logger *s
 	return nil
 }
 
-func serveHTTP(ctx context.Context, server *mcp.Server, cfg config.Config, logger *slog.Logger) error {
+func serveHTTP(ctx context.Context, server *mcp.Server, cfg *config.Config, logger *slog.Logger) error {
 	httpSrv := mcpserver.NewHTTPServer(server, cfg.HTTPAddr, cfg.HTTPBearerToken, logger)
 	errCh := make(chan error, 1)
 	go func() {
@@ -82,7 +82,7 @@ func serveHTTP(ctx context.Context, server *mcp.Server, cfg config.Config, logge
 	}
 }
 
-func newKeycloakClient(cfg config.Config) *gocloak.GoCloak {
+func newKeycloakClient(cfg *config.Config) *gocloak.GoCloak {
 	client := gocloak.NewClient(cfg.KeycloakURL)
 	client.RestyClient().GetClient().CheckRedirect = rejectRedirects
 	client.RestyClient().
