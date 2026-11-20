@@ -23,6 +23,7 @@ func (*serviceClient) GetToken(context.Context, string, gocloak.TokenOptions) (*
 	return &gocloak.JWT{AccessToken: "token", ExpiresIn: 60}, nil
 }
 
+//nolint:gocritic // GoCloak's interface requires GetUsersParams by value.
 func (c *serviceClient) GetUsers(ctx context.Context, token, realm string, params gocloak.GetUsersParams) ([]*gocloak.User, error) {
 	c.usersParams = params
 	if c.getUsersFn != nil {

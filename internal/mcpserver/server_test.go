@@ -138,13 +138,9 @@ func TestNewRegistersReadOnlyToolsOverInMemoryTransport(t *testing.T) {
 			t.Errorf("tool %q missing ReadOnlyHint", tool.Name)
 		}
 	}
-	if _, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "list_users"}); err != nil {
-		t.Fatalf("CallTool(list_users) error = %v", err)
-	}
-	if _, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "list_clients"}); err != nil {
-		t.Fatalf("CallTool(list_clients) error = %v", err)
-	}
-	if _, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "get_realm_info"}); err != nil {
-		t.Fatalf("CallTool(get_realm_info) error = %v", err)
+	for _, name := range []string{"list_users", "list_clients", "get_realm_info"} {
+		if _, err := session.CallTool(ctx, &mcp.CallToolParams{Name: name}); err != nil {
+			t.Fatalf("CallTool(%s) error = %v", name, err)
+		}
 	}
 }
