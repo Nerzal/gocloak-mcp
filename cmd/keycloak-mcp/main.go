@@ -25,7 +25,6 @@ import (
 func main() {
 	logger := logging.New()
 	if err := run(logger); err != nil {
-		logger.Error("MCP server stopped")
 		os.Exit(1)
 	}
 }
@@ -37,11 +36,31 @@ func run(logger *slog.Logger) error {
 		return errors.New("invalid configuration")
 	}
 
-	client := gocloak.NewClient(cfg.KeycloakURL)
-	client.RestyClient().GetClient().CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
-		return errors.New("redirects are not permitted")
+	client := newKeycloakClient(cfg)
+	tokenProvider := keycloak.NewTokenProvider(client, cfg.Realm, cfg.ClientID, cfg.ClientSecret, cfg.RequestTimeout)
+	service := keycloak.NewService(client, tokenProvider, cfg.Realm)
+	server := mcpserver.New(service, cfg.RequestTimeout, logger)
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	if err := server.Run(ctx, &mcp.StdioTransport{}); err != nil && ctx.Err() == nil {
+		logger.Error("MCP server stopped")
+		return errors.New("MCP server stopped")
 	}
-	client.RestyClient().SetTimeout(cfg.RequestTimeout).SetTransport(&http.Transport{
+	return nil
+}
+
+func newKeycloakClient(cfg config.Config) *gocloak.GoCloak {
+	client := gocloak.NewClient(cfg.KeycloakURL)
+	client.RestyClient().GetClient().CheckRedirect = rejectRedirects
+	client.RestyClient().
+		SetTimeout(cfg.RequestTimeout).
+		SetTransport(newHTTPTransport(cfg.RequestTimeout))
+	return client
+}
+
+func newHTTPTransport(timeout time.Duration) *http.Transport {
+	return &http.Transport{
 		Proxy:             http.ProxyFromEnvironment,
 		ForceAttemptHTTP2: true,
 		DialContext: (&net.Dialer{
@@ -50,19 +69,13 @@ func run(logger *slog.Logger) error {
 		}).DialContext,
 		TLSClientConfig:       &tls.Config{MinVersion: tls.VersionTLS12},
 		TLSHandshakeTimeout:   5 * time.Second,
-		ResponseHeaderTimeout: 10 * time.Second,
+		ResponseHeaderTimeout: timeout,
 		IdleConnTimeout:       90 * time.Second,
 		MaxIdleConns:          100,
 		MaxIdleConnsPerHost:   10,
-	})
-	tokenProvider := keycloak.NewTokenProvider(client, cfg.Realm, cfg.ClientID, cfg.ClientSecret)
-	service := keycloak.NewService(client, tokenProvider, cfg.Realm)
-	server := mcpserver.New(service, cfg.RequestTimeout, logger)
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-	if err := server.Run(ctx, &mcp.StdioTransport{}); err != nil && ctx.Err() == nil {
-		return errors.New("MCP server stopped")
 	}
-	return nil
+}
+
+func rejectRedirects(_ *http.Request, _ []*http.Request) error {
+	return errors.New("redirects are not permitted")
 }

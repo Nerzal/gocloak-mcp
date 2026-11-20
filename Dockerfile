@@ -2,7 +2,7 @@ FROM golang:1.26.11-alpine AS build
 
 WORKDIR /src
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod download && go mod verify
 COPY cmd ./cmd
 COPY internal ./internal
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/keycloak-mcp ./cmd/keycloak-mcp

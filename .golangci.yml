@@ -38,6 +38,10 @@ linters:
       forbid:
         - pattern: '^fmt\.Print(f|ln)?$'
           msg: stdout is reserved for MCP JSON-RPC
+        - pattern: '^os\.Stdout$'
+          msg: stdout is reserved for MCP JSON-RPC
+        - pattern: '^log\.(Print|Fatal|Panic)(f|ln)?$'
+          msg: use internal/logging redacting slog logger on stderr
     funlen:
       lines: 50
       statements: 30

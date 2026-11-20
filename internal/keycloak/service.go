@@ -3,8 +3,14 @@ package keycloak
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/Nerzal/gocloak/v14"
+)
+
+var (
+	errKeycloakRequest = errors.New("keycloak request failed")
+	errUnauthorized    = errors.New("keycloak request unauthorized")
 )
 
 // Service exposes the read-only operations used by MCP handlers.
@@ -29,16 +35,11 @@ func (s *service) ListUsers(ctx context.Context, first, pageSize int) ([]User, e
 	if err := validatePagination(first, pageSize); err != nil {
 		return nil, err
 	}
-	token, err := s.tokens.Token(ctx)
-	if err != nil {
-		return nil, errors.New("keycloak request failed")
-	}
-	users, err := s.client.GetUsers(ctx, token, s.realm, gocloak.GetUsersParams{
-		First: &first,
-		Max:   &pageSize,
+	users, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.User, error) {
+		return s.fetchUsers(ctx, token, first, pageSize)
 	})
 	if err != nil {
-		return nil, errors.New("keycloak request failed")
+		return nil, err
 	}
 	return mapUsers(users), nil
 }
@@ -47,30 +48,91 @@ func (s *service) ListClients(ctx context.Context, first, pageSize int) ([]Clien
 	if err := validatePagination(first, pageSize); err != nil {
 		return nil, err
 	}
-	token, err := s.tokens.Token(ctx)
-	if err != nil {
-		return nil, errors.New("keycloak request failed")
-	}
-	clients, err := s.client.GetClients(ctx, token, s.realm, gocloak.GetClientsParams{
-		First: &first,
-		Max:   &pageSize,
+	clients, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Client, error) {
+		return s.fetchClients(ctx, token, first, pageSize)
 	})
 	if err != nil {
-		return nil, errors.New("keycloak request failed")
+		return nil, err
 	}
 	return mapClients(clients), nil
 }
 
 func (s *service) GetRealmInfo(ctx context.Context) (RealmInfo, error) {
-	token, err := s.tokens.Token(ctx)
+	realm, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.RealmRepresentation, error) {
+		return s.fetchRealm(ctx, token)
+	})
 	if err != nil {
-		return RealmInfo{}, errors.New("keycloak request failed")
-	}
-	realm, err := s.client.GetRealm(ctx, token, s.realm)
-	if err != nil || realm == nil {
-		return RealmInfo{}, errors.New("keycloak request failed")
+		return RealmInfo{}, err
 	}
 	return mapRealm(realm), nil
+}
+
+func runWithTokenRetry[T any](ctx context.Context, tokens TokenProvider, call func(string) (T, error)) (T, error) {
+	var zero T
+	token, err := tokens.Token(ctx)
+	if err != nil {
+		return zero, errKeycloakRequest
+	}
+	result, err := call(token)
+	if !errors.Is(err, errUnauthorized) {
+		if err != nil {
+			return zero, errKeycloakRequest
+		}
+		return result, nil
+	}
+	tokens.Invalidate()
+	freshToken, err := tokens.Token(ctx)
+	if err != nil {
+		return zero, errKeycloakRequest
+	}
+	result, err = call(freshToken)
+	if err != nil {
+		return zero, errKeycloakRequest
+	}
+	return result, nil
+}
+
+func (s *service) fetchUsers(ctx context.Context, token string, first, pageSize int) ([]*gocloak.User, error) {
+	brief := true
+	users, err := s.client.GetUsers(ctx, token, s.realm, gocloak.GetUsersParams{
+		BriefRepresentation: &brief,
+		First:               &first,
+		Max:                 &pageSize,
+	})
+	if err != nil {
+		return nil, classifyUpstreamError(err)
+	}
+	return users, nil
+}
+
+func (s *service) fetchClients(ctx context.Context, token string, first, pageSize int) ([]*gocloak.Client, error) {
+	clients, err := s.client.GetClients(ctx, token, s.realm, gocloak.GetClientsParams{
+		First: &first,
+		Max:   &pageSize,
+	})
+	if err != nil {
+		return nil, classifyUpstreamError(err)
+	}
+	return clients, nil
+}
+
+func (s *service) fetchRealm(ctx context.Context, token string) (*gocloak.RealmRepresentation, error) {
+	realm, err := s.client.GetRealm(ctx, token, s.realm)
+	if err != nil {
+		return nil, classifyUpstreamError(err)
+	}
+	if realm == nil {
+		return nil, errKeycloakRequest
+	}
+	return realm, nil
+}
+
+func classifyUpstreamError(err error) error {
+	var apiErr *gocloak.APIError
+	if errors.As(err, &apiErr) && apiErr.Code == http.StatusUnauthorized {
+		return errUnauthorized
+	}
+	return errKeycloakRequest
 }
 
 func validatePagination(first, pageSize int) error {
