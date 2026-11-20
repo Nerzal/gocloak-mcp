@@ -1,7 +1,9 @@
+// Package config loads and validates the server's environment configuration.
 package config
 
 import (
 	"errors"
+	"net"
 	"net/url"
 	"os"
 	"regexp"
@@ -15,6 +17,7 @@ const (
 
 var realmPattern = regexp.MustCompile(`^[A-Za-z0-9._-]{1,255}$`)
 
+// Config contains the validated Keycloak connection settings.
 type Config struct {
 	KeycloakURL    string
 	Realm          string
@@ -23,6 +26,7 @@ type Config struct {
 	RequestTimeout time.Duration
 }
 
+// Load reads and validates configuration from the process environment.
 func Load() (Config, error) {
 	cfg := Config{
 		KeycloakURL:    os.Getenv("KEYCLOAK_URL"),
@@ -45,11 +49,12 @@ func Load() (Config, error) {
 	return cfg, nil
 }
 
+// Validate checks the Keycloak URL, realm, and service-account credentials.
 func (c Config) Validate() error {
 	parsed, err := url.Parse(c.KeycloakURL)
-	if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Host == "" ||
+	if err != nil || !isAllowedKeycloakURL(parsed) ||
 		parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
-		return errors.New("KEYCLOAK_URL must be an http(s) URL without credentials, query, or fragment")
+		return errors.New("KEYCLOAK_URL must use HTTPS (or loopback HTTP) without credentials, query, or fragment")
 	}
 	if !realmPattern.MatchString(c.Realm) {
 		return errors.New("KEYCLOAK_REALM must be 1-255 letters, digits, dots, underscores, or hyphens")
@@ -61,4 +66,18 @@ func (c Config) Validate() error {
 		return errors.New("KEYCLOAK_CLIENT_SECRET is required")
 	}
 	return nil
+}
+
+func isAllowedKeycloakURL(parsed *url.URL) bool {
+	if parsed.Host == "" {
+		return false
+	}
+	if parsed.Scheme == "https" {
+		return true
+	}
+	if parsed.Scheme != "http" {
+		return false
+	}
+	host := parsed.Hostname()
+	return host == "localhost" || net.ParseIP(host).IsLoopback()
 }

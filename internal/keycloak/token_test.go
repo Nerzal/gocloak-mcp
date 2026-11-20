@@ -15,20 +15,21 @@ type tokenClient struct {
 	getToken func(context.Context, string, gocloak.TokenOptions) (*gocloak.JWT, error)
 }
 
+//nolint:gocritic // GoCloak's interface requires TokenOptions by value.
 func (c *tokenClient) GetToken(ctx context.Context, realm string, options gocloak.TokenOptions) (*gocloak.JWT, error) {
 	return c.getToken(ctx, realm, options)
 }
 
 func (*tokenClient) GetUsers(context.Context, string, string, gocloak.GetUsersParams) ([]*gocloak.User, error) {
-	return nil, nil
+	return []*gocloak.User{}, nil
 }
 
 func (*tokenClient) GetClients(context.Context, string, string, gocloak.GetClientsParams) ([]*gocloak.Client, error) {
-	return nil, nil
+	return []*gocloak.Client{}, nil
 }
 
 func (*tokenClient) GetRealm(context.Context, string, string) (*gocloak.RealmRepresentation, error) {
-	return nil, nil
+	return &gocloak.RealmRepresentation{}, nil
 }
 
 func TestTokenProviderSharesConcurrentRequest(t *testing.T) {
@@ -45,39 +46,44 @@ func TestTokenProviderSharesConcurrentRequest(t *testing.T) {
 	}
 	provider := NewTokenProvider(client, "realm", "client", "secret")
 	const workers = 24
-	results := make(chan string, workers)
-	errorsFound := make(chan error, workers)
+	results := concurrentTokenResults(provider, workers)
+	<-entered
+	time.Sleep(10 * time.Millisecond)
+	close(release)
+
+	for result := range results {
+		if result.err != nil {
+			t.Errorf("Token() error = %v", result.err)
+		} else if result.token != "access" {
+			t.Errorf("Token() = %q, want access", result.token)
+		}
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("GetToken calls = %d, want 1", got)
+	}
+}
+
+type tokenResult struct {
+	token string
+	err   error
+}
+
+func concurrentTokenResults(provider TokenProvider, workers int) <-chan tokenResult {
+	results := make(chan tokenResult, workers)
 	var group sync.WaitGroup
 	for range workers {
 		group.Add(1)
 		go func() {
 			defer group.Done()
 			token, err := provider.Token(context.Background())
-			if err != nil {
-				errorsFound <- err
-				return
-			}
-			results <- token
+			results <- tokenResult{token: token, err: err}
 		}()
 	}
-	<-entered
-	time.Sleep(10 * time.Millisecond)
-	close(release)
-	group.Wait()
-	close(results)
-	close(errorsFound)
-
-	for err := range errorsFound {
-		t.Errorf("Token() error = %v", err)
-	}
-	for token := range results {
-		if token != "access" {
-			t.Errorf("Token() = %q, want access", token)
-		}
-	}
-	if got := calls.Load(); got != 1 {
-		t.Fatalf("GetToken calls = %d, want 1", got)
-	}
+	go func() {
+		group.Wait()
+		close(results)
+	}()
+	return results
 }
 
 func TestTokenProviderSanitizesUpstreamError(t *testing.T) {

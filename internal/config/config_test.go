@@ -24,9 +24,9 @@ func TestLoadRejectsInvalidConfiguration(t *testing.T) {
 		want string
 	}{
 		{
-			name: "invalid URL",
+			name: "remote HTTP URL",
 			set: func(t *testing.T) {
-				t.Setenv("KEYCLOAK_URL", "file:///etc/passwd")
+				t.Setenv("KEYCLOAK_URL", "http://keycloak.example.test")
 			},
 			want: "KEYCLOAK_URL",
 		},
@@ -67,13 +67,21 @@ func TestLoadRejectsInvalidConfiguration(t *testing.T) {
 
 func TestValidateRejectsURLCredentials(t *testing.T) {
 	cfg := Config{
-		KeycloakURL:  "******example.test",
+		KeycloakURL:  "https://" + "alice:pw@" + "example.test",
 		Realm:        "example",
 		ClientID:     "client",
 		ClientSecret: "secret",
 	}
-	if err := cfg.Validate(); err == nil || strings.Contains(err.Error(), "password") {
+	if err := cfg.Validate(); err == nil || strings.Contains(err.Error(), "pw") {
 		t.Fatalf("Validate() error = %v, want sanitized URL validation error", err)
+	}
+}
+
+func TestLoadAllowsLoopbackHTTP(t *testing.T) {
+	setRequiredEnvironment(t)
+	t.Setenv("KEYCLOAK_URL", "http://127.0.0.1:8080/auth")
+	if _, err := Load(); err != nil {
+		t.Fatalf("Load() error = %v", err)
 	}
 }
 

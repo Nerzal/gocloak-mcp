@@ -16,13 +16,13 @@ type testService struct {
 	max      int
 }
 
-func (s *testService) ListUsers(_ context.Context, first, max int) ([]keycloak.User, error) {
-	s.first, s.max = first, max
+func (s *testService) ListUsers(_ context.Context, first, pageSize int) ([]keycloak.User, error) {
+	s.first, s.max = first, pageSize
 	return s.users, s.usersErr
 }
 
 func (*testService) ListClients(context.Context, int, int) ([]keycloak.ClientInfo, error) {
-	return nil, nil
+	return []keycloak.ClientInfo{}, nil
 }
 
 func (*testService) GetRealmInfo(context.Context) (keycloak.RealmInfo, error) {
@@ -52,7 +52,7 @@ func TestListUsersRejectsInvalidPage(t *testing.T) {
 func TestToolErrorsAreSanitized(t *testing.T) {
 	service := &testService{usersErr: errors.New("raw-keycloak-response")}
 	_, _, err := listUsers(context.Background(), service, time.Second, pageInput{Max: 10})
-	if err == nil || err.Error() != "Keycloak request failed" {
+	if err == nil || err.Error() != "keycloak request failed" {
 		t.Fatalf("listUsers() error = %v, want sanitized error", err)
 	}
 }

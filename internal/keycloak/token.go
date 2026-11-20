@@ -10,6 +10,7 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+// TokenProvider returns a cached access token for Keycloak API requests.
 type TokenProvider interface {
 	Token(context.Context) (string, error)
 }
@@ -27,6 +28,7 @@ type tokenProvider struct {
 	requests  singleflight.Group
 }
 
+// NewTokenProvider constructs a thread-safe client-credentials token cache.
 func NewTokenProvider(client Client, realm, clientID, clientSecret string) TokenProvider {
 	return &tokenProvider{
 		client:       client,
@@ -72,12 +74,14 @@ func (p *tokenProvider) cachedToken() (string, bool) {
 func (p *tokenProvider) fetchToken(ctx context.Context) (string, error) {
 	clientID := p.clientID
 	clientSecret := p.clientSecret
+	grantType := "client_credentials"
 	token, err := p.client.GetToken(ctx, p.realm, gocloak.TokenOptions{
 		ClientID:     &clientID,
 		ClientSecret: &clientSecret,
-		GrantType:    stringPointer("client_credentials"),
+		GrantType:    &grantType,
 	})
-	if err != nil || token == nil || token.AccessToken == "" || token.ExpiresIn <= 0 {
+	if err != nil || token == nil || token.AccessToken == "" || token.ExpiresIn <= 0 ||
+		int64(token.ExpiresIn) > (1<<63-1)/int64(time.Second) {
 		return "", errors.New("token request failed")
 	}
 
@@ -92,8 +96,4 @@ func (p *tokenProvider) fetchToken(ctx context.Context) (string, error) {
 	p.refreshAt = now.Add(refreshAfter)
 	p.mu.Unlock()
 	return token.AccessToken, nil
-}
-
-func stringPointer(value string) *string {
-	return &value
 }

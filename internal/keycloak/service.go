@@ -7,6 +7,7 @@ import (
 	"github.com/Nerzal/gocloak/v14"
 )
 
+// Service exposes the read-only operations used by MCP handlers.
 type Service interface {
 	ListUsers(context.Context, int, int) ([]User, error)
 	ListClients(context.Context, int, int) ([]ClientInfo, error)
@@ -19,42 +20,43 @@ type service struct {
 	realm  string
 }
 
+// NewService constructs a Keycloak service from its API and token dependencies.
 func NewService(client Client, tokens TokenProvider, realm string) Service {
 	return &service{client: client, tokens: tokens, realm: realm}
 }
 
-func (s *service) ListUsers(ctx context.Context, first, max int) ([]User, error) {
-	if first < 0 || max < 1 || max > 100 {
+func (s *service) ListUsers(ctx context.Context, first, pageSize int) ([]User, error) {
+	if first < 0 || pageSize < 1 || pageSize > 100 {
 		return nil, errors.New("invalid pagination parameters")
 	}
 	token, err := s.tokens.Token(ctx)
 	if err != nil {
-		return nil, errors.New("Keycloak request failed")
+		return nil, errors.New("keycloak request failed")
 	}
 	users, err := s.client.GetUsers(ctx, token, s.realm, gocloak.GetUsersParams{
 		First: &first,
-		Max:   &max,
+		Max:   &pageSize,
 	})
 	if err != nil {
-		return nil, errors.New("Keycloak request failed")
+		return nil, errors.New("keycloak request failed")
 	}
 	return mapUsers(users), nil
 }
 
-func (s *service) ListClients(ctx context.Context, first, max int) ([]ClientInfo, error) {
-	if first < 0 || max < 1 || max > 100 {
+func (s *service) ListClients(ctx context.Context, first, pageSize int) ([]ClientInfo, error) {
+	if first < 0 || pageSize < 1 || pageSize > 100 {
 		return nil, errors.New("invalid pagination parameters")
 	}
 	token, err := s.tokens.Token(ctx)
 	if err != nil {
-		return nil, errors.New("Keycloak request failed")
+		return nil, errors.New("keycloak request failed")
 	}
 	clients, err := s.client.GetClients(ctx, token, s.realm, gocloak.GetClientsParams{
 		First: &first,
-		Max:   &max,
+		Max:   &pageSize,
 	})
 	if err != nil {
-		return nil, errors.New("Keycloak request failed")
+		return nil, errors.New("keycloak request failed")
 	}
 	return mapClients(clients), nil
 }
@@ -62,11 +64,11 @@ func (s *service) ListClients(ctx context.Context, first, max int) ([]ClientInfo
 func (s *service) GetRealmInfo(ctx context.Context) (RealmInfo, error) {
 	token, err := s.tokens.Token(ctx)
 	if err != nil {
-		return RealmInfo{}, errors.New("Keycloak request failed")
+		return RealmInfo{}, errors.New("keycloak request failed")
 	}
 	realm, err := s.client.GetRealm(ctx, token, s.realm)
 	if err != nil || realm == nil {
-		return RealmInfo{}, errors.New("Keycloak request failed")
+		return RealmInfo{}, errors.New("keycloak request failed")
 	}
 	return mapRealm(realm), nil
 }

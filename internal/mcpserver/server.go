@@ -1,3 +1,4 @@
+// Package mcpserver registers the read-only Keycloak MCP tools.
 package mcpserver
 
 import (
@@ -6,10 +7,12 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Nerzal/gocloak-mcp/internal/keycloak"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"github.com/Nerzal/gocloak-mcp/internal/keycloak"
 )
 
+// Service is the read-only Keycloak service required by the MCP handlers.
 type Service interface {
 	ListUsers(context.Context, int, int) ([]keycloak.User, error)
 	ListClients(context.Context, int, int) ([]keycloak.ClientInfo, error)
@@ -21,6 +24,7 @@ type pageInput struct {
 	Max   int `json:"max,omitempty" jsonschema:"page size between 1 and 100; defaults to 50"`
 }
 
+// New constructs the MCP server and registers the three read-only tools.
 func New(service Service, timeout time.Duration, logger *slog.Logger) *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    "gocloak-mcp",
@@ -48,29 +52,29 @@ func New(service Service, timeout time.Duration, logger *slog.Logger) *mcp.Serve
 }
 
 func listUsers(ctx context.Context, service Service, timeout time.Duration, input pageInput) (*mcp.CallToolResult, []keycloak.User, error) {
-	first, max, err := validatePage(input)
+	first, pageSize, err := validatePage(input)
 	if err != nil {
 		return nil, nil, err
 	}
 	requestCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	users, err := service.ListUsers(requestCtx, first, max)
+	users, err := service.ListUsers(requestCtx, first, pageSize)
 	if err != nil {
-		return nil, nil, errors.New("Keycloak request failed")
+		return nil, nil, errors.New("keycloak request failed")
 	}
 	return nil, users, nil
 }
 
 func listClients(ctx context.Context, service Service, timeout time.Duration, input pageInput) (*mcp.CallToolResult, []keycloak.ClientInfo, error) {
-	first, max, err := validatePage(input)
+	first, pageSize, err := validatePage(input)
 	if err != nil {
 		return nil, nil, err
 	}
 	requestCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	clients, err := service.ListClients(requestCtx, first, max)
+	clients, err := service.ListClients(requestCtx, first, pageSize)
 	if err != nil {
-		return nil, nil, errors.New("Keycloak request failed")
+		return nil, nil, errors.New("keycloak request failed")
 	}
 	return nil, clients, nil
 }
@@ -80,12 +84,12 @@ func getRealmInfo(ctx context.Context, service Service, timeout time.Duration) (
 	defer cancel()
 	realm, err := service.GetRealmInfo(requestCtx)
 	if err != nil {
-		return nil, keycloak.RealmInfo{}, errors.New("Keycloak request failed")
+		return nil, keycloak.RealmInfo{}, errors.New("keycloak request failed")
 	}
 	return nil, realm, nil
 }
 
-func validatePage(input pageInput) (int, int, error) {
+func validatePage(input pageInput) (first, pageSize int, err error) {
 	if input.First < 0 {
 		return 0, 0, errors.New("first must not be negative")
 	}
@@ -93,7 +97,7 @@ func validatePage(input pageInput) (int, int, error) {
 		input.Max = 50
 	}
 	if input.Max < 1 || input.Max > 100 {
-		return 0, 0, errors.New("max must be between 1 and 100")
+		return 0, 0, errors.New("page size must be between 1 and 100")
 	}
 	return input.First, input.Max, nil
 }

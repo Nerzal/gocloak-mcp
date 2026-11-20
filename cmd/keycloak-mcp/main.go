@@ -1,7 +1,10 @@
+// Package main wires and runs the Keycloak MCP server.
 package main
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
 	"log/slog"
 	"net"
 	"net/http"
@@ -10,19 +13,27 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Nerzal/gocloak-mcp/internal/config"
-	"github.com/Nerzal/gocloak-mcp/internal/keycloak"
-	"github.com/Nerzal/gocloak-mcp/internal/mcpserver"
 	"github.com/Nerzal/gocloak/v14"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"github.com/Nerzal/gocloak-mcp/internal/config"
+	"github.com/Nerzal/gocloak-mcp/internal/keycloak"
+	"github.com/Nerzal/gocloak-mcp/internal/logging"
+	"github.com/Nerzal/gocloak-mcp/internal/mcpserver"
 )
 
 func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	logger := logging.New()
+	if err := run(logger); err != nil {
+		logger.Error("MCP server stopped")
+		os.Exit(1)
+	}
+}
+
+func run(logger *slog.Logger) error {
 	cfg, err := config.Load()
 	if err != nil {
-		logger.Error("invalid configuration")
-		os.Exit(1)
+		return errors.New("invalid configuration")
 	}
 
 	client := gocloak.NewClient(cfg.KeycloakURL)
@@ -31,6 +42,7 @@ func main() {
 			Timeout:   5 * time.Second,
 			KeepAlive: 30 * time.Second,
 		}).DialContext,
+		TLSClientConfig:       &tls.Config{MinVersion: tls.VersionTLS12},
 		TLSHandshakeTimeout:   5 * time.Second,
 		ResponseHeaderTimeout: 10 * time.Second,
 		IdleConnTimeout:       90 * time.Second,
@@ -44,7 +56,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	if err := server.Run(ctx, &mcp.StdioTransport{}); err != nil {
-		logger.Error("MCP server stopped")
-		os.Exit(1)
+		return errors.New("MCP server stopped")
 	}
+	return nil
 }

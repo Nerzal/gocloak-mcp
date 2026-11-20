@@ -39,11 +39,11 @@ func (token staticToken) Token(context.Context) (string, error) {
 }
 
 func TestServiceMapsOnlySafeUserFields(t *testing.T) {
-	username, email, id, secret := "alice", "alice@example.test", "user-id", "must-not-be-returned"
+	username, email, id, marker := "alice", "alice@example.test", "user-id", "private-marker"
 	service := NewService(&serviceClient{
 		users: []*gocloak.User{
 			nil,
-			{ID: &id, Username: &username, Email: &email, FirstName: &secret},
+			{ID: &id, Username: &username, Email: &email, FirstName: &marker},
 		},
 	}, staticToken("access"), "realm")
 
@@ -51,7 +51,7 @@ func TestServiceMapsOnlySafeUserFields(t *testing.T) {
 	if err != nil || len(users) != 1 {
 		t.Fatalf("ListUsers() = %v, %v", users, err)
 	}
-	if users[0].Username != username || users[0].Email != email || strings.Contains(users[0].Username, secret) {
+	if users[0].Username != username || users[0].Email != email || strings.Contains(users[0].Username, marker) {
 		t.Fatalf("ListUsers() = %+v", users)
 	}
 }
@@ -59,7 +59,7 @@ func TestServiceMapsOnlySafeUserFields(t *testing.T) {
 func TestServiceSanitizesUpstreamErrors(t *testing.T) {
 	service := NewService(&serviceClient{err: errors.New("raw body includes bearer-secret")}, staticToken("access"), "realm")
 	_, err := service.ListClients(context.Background(), 0, 10)
-	if err == nil || err.Error() != "Keycloak request failed" {
+	if err == nil || err.Error() != "keycloak request failed" {
 		t.Fatalf("ListClients() error = %v, want sanitized error", err)
 	}
 }

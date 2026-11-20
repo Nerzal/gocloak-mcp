@@ -1,3 +1,4 @@
+// Package keycloak provides read-only Keycloak services backed by GoCloak.
 package keycloak
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/Nerzal/gocloak/v14"
 )
 
+// Client is the subset of GoCloak used by the read-only server.
 type Client interface {
 	GetToken(context.Context, string, gocloak.TokenOptions) (*gocloak.JWT, error)
 	GetUsers(context.Context, string, string, gocloak.GetUsersParams) ([]*gocloak.User, error)
@@ -13,6 +15,7 @@ type Client interface {
 	GetRealm(context.Context, string, string) (*gocloak.RealmRepresentation, error)
 }
 
+// User contains the user fields exposed by the MCP server.
 type User struct {
 	ID       string `json:"id"`
 	Username string `json:"username,omitempty"`
@@ -20,6 +23,7 @@ type User struct {
 	Enabled  bool   `json:"enabled"`
 }
 
+// ClientInfo contains the client fields exposed by the MCP server.
 type ClientInfo struct {
 	ID       string `json:"id"`
 	ClientID string `json:"clientId,omitempty"`
@@ -28,6 +32,7 @@ type ClientInfo struct {
 	Public   bool   `json:"publicClient"`
 }
 
+// RealmInfo contains the realm fields exposed by the MCP server.
 type RealmInfo struct {
 	ID          string `json:"id,omitempty"`
 	Name        string `json:"realm"`
