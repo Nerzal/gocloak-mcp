@@ -69,7 +69,7 @@ func (c Config) Validate() error {
 }
 
 func isAllowedKeycloakURL(parsed *url.URL) bool {
-	if parsed.Host == "" {
+	if parsed.Hostname() == "" {
 		return false
 	}
 	if parsed.Scheme == "https" {

@@ -33,11 +33,17 @@ func main() {
 func run(logger *slog.Logger) error {
 	cfg, err := config.Load()
 	if err != nil {
+		logger.Error("invalid configuration", "reason", err.Error())
 		return errors.New("invalid configuration")
 	}
 
 	client := gocloak.NewClient(cfg.KeycloakURL)
+	client.RestyClient().GetClient().CheckRedirect = func(_ *http.Request, _ []*http.Request) error {
+		return errors.New("redirects are not permitted")
+	}
 	client.RestyClient().SetTimeout(cfg.RequestTimeout).SetTransport(&http.Transport{
+		Proxy:             http.ProxyFromEnvironment,
+		ForceAttemptHTTP2: true,
 		DialContext: (&net.Dialer{
 			Timeout:   5 * time.Second,
 			KeepAlive: 30 * time.Second,
@@ -55,7 +61,7 @@ func run(logger *slog.Logger) error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	if err := server.Run(ctx, &mcp.StdioTransport{}); err != nil {
+	if err := server.Run(ctx, &mcp.StdioTransport{}); err != nil && ctx.Err() == nil {
 		return errors.New("MCP server stopped")
 	}
 	return nil
