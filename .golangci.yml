@@ -1,0 +1,75 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - copyloopvar
+    - cyclop
+    - errcheck
+    - errorlint
+    - exhaustive
+    - forbidigo
+    - funlen
+    - gocritic
+    - gosec
+    - govet
+    - makezero
+    - misspell
+    - nilerr
+    - nilnil
+    - noctx
+    - nestif
+    - perfsprint
+    - prealloc
+    - revive
+    - sqlclosecheck
+    - staticcheck
+    - unparam
+    - unused
+    - wrapcheck
+  settings:
+    cyclop:
+      max-complexity: 10
+    forbidigo:
+      forbid:
+        - pattern: '^fmt\.Print(f|ln)?$'
+          msg: stdout is reserved for MCP JSON-RPC
+        - pattern: '^os\.Stdout$'
+          msg: stdout is reserved for MCP JSON-RPC
+        - pattern: '^log\.(Print|Fatal|Panic)(f|ln)?$'
+          msg: use internal/logging redacting slog logger on stderr
+    funlen:
+      lines: 50
+      statements: 30
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+    govet:
+      enable:
+        - shadow
+    nestif:
+      min-complexity: 3
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - forbidigo
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/Nerzal/gocloak-mcp
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
