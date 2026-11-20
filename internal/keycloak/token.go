@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Nerzal/gocloak/v14"
+	"github.com/Nerzal/gocloak/v15"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -97,13 +97,10 @@ func (p *tokenProvider) cachedToken() (string, bool) {
 
 func (p *tokenProvider) fetchToken(ctx context.Context) (string, error) {
 	startedAt := p.now()
-	clientID := p.clientID
-	clientSecret := p.clientSecret
-	grantType := "client_credentials"
 	token, err := p.client.GetToken(ctx, p.realm, gocloak.TokenOptions{
-		ClientID:     &clientID,
-		ClientSecret: &clientSecret,
-		GrantType:    &grantType,
+		ClientID:     p.clientID,
+		ClientSecret: p.clientSecret,
+		GrantType:    "client_credentials",
 	})
 	if err != nil || !isValidJWT(token) {
 		return "", errors.New("token request failed")

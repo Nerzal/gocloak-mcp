@@ -5,7 +5,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/Nerzal/gocloak/v14"
+	"github.com/Nerzal/gocloak/v15"
 )
 
 func (s *service) ListRealms(ctx context.Context) ([]RealmInfo, error) {
@@ -206,11 +206,11 @@ func mapEvents(events []*gocloak.EventRepresentation) []EventInfo {
 		}
 		result = append(result, EventInfo{
 			Time:      event.Time,
-			Type:      derefString(event.Type),
-			RealmID:   derefString(event.RealmID),
-			ClientID:  derefString(event.ClientID),
-			UserID:    derefString(event.UserID),
-			SessionID: derefString(event.SessionID),
+			Type:      sanitizeOutputString(event.Type, maxOutputFieldLen),
+			RealmID:   sanitizeOutputString(event.RealmID, maxOutputFieldLen),
+			ClientID:  sanitizeOutputString(event.ClientID, maxOutputFieldLen),
+			UserID:    sanitizeOutputString(event.UserID, maxOutputFieldLen),
+			SessionID: sanitizeOutputString(event.SessionID, maxOutputFieldLen),
 		})
 	}
 	return result
@@ -222,18 +222,15 @@ func mapAdminEvents(events []*gocloak.AdminEventRepresentation) []AdminEventInfo
 		if event == nil {
 			continue
 		}
-		info := AdminEventInfo{
+		result = append(result, AdminEventInfo{
 			Time:          event.Time,
-			OperationType: derefString(event.OperationType),
-			RealmID:       derefString(event.RealmID),
-			ResourceType:  derefString(event.ResourceType),
-			ResourcePath:  derefString(event.ResourcePath),
-		}
-		if event.AuthDetails != nil {
-			info.AuthClientID = derefString(event.AuthDetails.ClientID)
-			info.AuthUserID = derefString(event.AuthDetails.UserID)
-		}
-		result = append(result, info)
+			OperationType: sanitizeOutputString(event.OperationType, maxOutputFieldLen),
+			RealmID:       sanitizeOutputString(event.RealmID, maxOutputFieldLen),
+			ResourceType:  sanitizeOutputString(event.ResourceType, maxOutputFieldLen),
+			ResourcePath:  sanitizeOutputString(event.ResourcePath, maxOutputFieldLen),
+			AuthClientID:  sanitizeOutputString(event.AuthDetails.ClientID, maxOutputFieldLen),
+			AuthUserID:    sanitizeOutputString(event.AuthDetails.UserID, maxOutputFieldLen),
+		})
 	}
 	return result
 }

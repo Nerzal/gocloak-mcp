@@ -3,7 +3,7 @@ package keycloak
 import (
 	"context"
 
-	"github.com/Nerzal/gocloak/v14"
+	"github.com/Nerzal/gocloak/v15"
 )
 
 func (s *service) ListGroups(ctx context.Context, realm string, first, pageSize int, search string) ([]GroupInfo, error) {

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Nerzal/gocloak/v14"
+	"github.com/Nerzal/gocloak/v15"
 
 	"github.com/Nerzal/gocloak-mcp/internal/config"
 )
@@ -261,13 +261,6 @@ func derefInt(ptr *int) int {
 }
 
 func derefInt32(ptr *int32) int32 {
-	if ptr == nil {
-		return 0
-	}
-	return *ptr
-}
-
-func derefInt64(ptr *int64) int64 {
 	if ptr == nil {
 		return 0
 	}

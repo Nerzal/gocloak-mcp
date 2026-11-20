@@ -3,7 +3,7 @@ package keycloak
 import (
 	"context"
 
-	"github.com/Nerzal/gocloak/v14"
+	"github.com/Nerzal/gocloak/v15"
 )
 
 func (s *service) ListAuthenticationFlows(ctx context.Context, realm string) ([]AuthFlowInfo, error) {
@@ -303,13 +303,9 @@ func mapOrganizationMembers(members []*gocloak.MemberRepresentation) []Organizat
 		if member == nil {
 			continue
 		}
-		var membershipType string
-		if member.MembershipType != nil {
-			membershipType = string(*member.MembershipType)
-		}
 		result = append(result, OrganizationMember{
 			User:           mapUser(&member.User),
-			MembershipType: membershipType,
+			MembershipType: sanitizeOutputString(string(member.MembershipType), maxOutputFieldLen),
 		})
 	}
 	return result

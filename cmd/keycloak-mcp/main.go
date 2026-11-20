@@ -13,7 +13,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Nerzal/gocloak/v14"
+	"github.com/Nerzal/gocloak/v15"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/Nerzal/gocloak-mcp/internal/config"

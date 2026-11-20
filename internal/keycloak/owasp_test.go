@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Nerzal/gocloak/v14"
+	"github.com/Nerzal/gocloak/v15"
 )
 
 func TestOWASP_MCP01_SecretExposureBlockedInDTOs(t *testing.T) {
@@ -20,7 +20,7 @@ func TestOWASP_MCP01_SecretExposureBlockedInDTOs(t *testing.T) {
 	svc := NewService(&stubClient{
 		clients:     []*gocloak.Client{{ID: strP("c1"), ClientID: strP("web"), Secret: strP(clientMarker)}},
 		idps:        []*gocloak.IdentityProviderRepresentation{{Alias: strP("okta"), Config: map[string]string{"clientSecret": idpMarker}}},
-		adminEvents: []*gocloak.AdminEventRepresentation{{OperationType: strP("CREATE"), Representation: strP(adminMarker)}},
+		adminEvents: []*gocloak.AdminEventRepresentation{{OperationType: "CREATE", Representation: adminMarker}},
 	}, &stubTokenProvider{}, "prod", []string{"prod"})
 
 	clients, err := svc.ListClients(ctx, "prod", 0, 10, ClientFilter{})
