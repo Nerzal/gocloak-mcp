@@ -44,10 +44,10 @@ func registerGroupCoreTools(server *mcp.Server, deps toolDeps) {
 		Name:        "list_groups",
 		Description: "List or search groups in a Keycloak realm.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listGroupsInput) (*mcp.CallToolResult, groupsOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listGroupsInput) (*mcp.CallToolResult, any, error) {
 		first, maxSize, err := validatePage(in.pageInput)
 		if err != nil {
-			return nil, groupsOutput{}, err
+			return nil, nil, err
 		}
 		return executeTool(ctx, deps, "list_groups", func(rCtx context.Context) (groupsOutput, error) {
 			groups, callErr := deps.service.ListGroups(rCtx, in.Realm, first, maxSize, in.Search)
@@ -59,7 +59,7 @@ func registerGroupCoreTools(server *mcp.Server, deps toolDeps) {
 		Name:        "count_groups",
 		Description: "Count groups in a Keycloak realm with optional search filter.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in countGroupsInput) (*mcp.CallToolResult, countOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in countGroupsInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "count_groups", func(rCtx context.Context) (countOutput, error) {
 			count, callErr := deps.service.CountGroups(rCtx, in.Realm, in.Search)
 			return countOutput{Count: count}, sanitizeErr(callErr)
@@ -70,7 +70,7 @@ func registerGroupCoreTools(server *mcp.Server, deps toolDeps) {
 		Name:        "get_group",
 		Description: "Get a single group by UUID.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in groupIDInput) (*mcp.CallToolResult, keycloak.GroupInfo, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in groupIDInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "get_group", func(rCtx context.Context) (keycloak.GroupInfo, error) {
 			res, callErr := deps.service.GetGroup(rCtx, in.Realm, in.GroupID)
 			return res, sanitizeErr(callErr)
@@ -83,10 +83,10 @@ func registerGroupRelationTools(server *mcp.Server, deps toolDeps) {
 		Name:        "get_group_members",
 		Description: "List users belonging to a Keycloak group.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in groupMembersInput) (*mcp.CallToolResult, usersOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in groupMembersInput) (*mcp.CallToolResult, any, error) {
 		first, maxSize, err := validatePage(in.pageInput)
 		if err != nil {
-			return nil, usersOutput{}, err
+			return nil, nil, err
 		}
 		return executeTool(ctx, deps, "get_group_members", func(rCtx context.Context) (usersOutput, error) {
 			users, callErr := deps.service.GetGroupMembers(rCtx, in.Realm, in.GroupID, first, maxSize)
@@ -98,7 +98,7 @@ func registerGroupRelationTools(server *mcp.Server, deps toolDeps) {
 		Name:        "get_group_roles",
 		Description: "List realm and client role mappings assigned to a Keycloak group.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in groupIDInput) (*mcp.CallToolResult, keycloak.RoleMappings, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in groupIDInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "get_group_roles", func(rCtx context.Context) (keycloak.RoleMappings, error) {
 			res, callErr := deps.service.GetGroupRoles(rCtx, in.Realm, in.GroupID)
 			return res, sanitizeErr(callErr)

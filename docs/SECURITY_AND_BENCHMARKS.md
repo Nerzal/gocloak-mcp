@@ -46,7 +46,7 @@ End-to-end MCP JSON-RPC (`BenchmarkInMemoryMCPCallListUsers`) and Streamable HTT
 
 ## 3. Head-to-Head Comparison vs. Competing Keycloak MCP Servers
 
-All servers were benchmarked head-to-head on the same machine (`ubuntu-latest`, 4 vCPU `x86_64`, Linux 7.0) against an identical local mock Keycloak Admin API returning 50 users per `list_users` call. The benchmark harness is fully reproducible in [`benchmarks/run_benchmarks.py`](../benchmarks/run_benchmarks.py) and automated via [`.github/workflows/benchmark.yml`](../.github/workflows/benchmark.yml) (`workflow_dispatch`).
+All servers were benchmarked head-to-head on the same machine (`ubuntu-latest`, 4 vCPU `x86_64`, Linux 7.0) against an identical local mock Keycloak Admin API returning 50 users per `list_users` call. The benchmark harness is fully reproducible in [`benchmarks/run_benchmarks.py`](../benchmarks/run_benchmarks.py) and runnable on demand via [`.github/workflows/benchmark.yml`](../.github/workflows/benchmark.yml) (`workflow_dispatch`).
 
 ### Stdio Transport (Local IDE / Agent: Claude Desktop, Cursor, VS Code, Claude Code)
 
@@ -54,9 +54,10 @@ Measured across 5 cold starts (`initialize` + `tools/list`) and 100 sequential `
 
 | Server | Runtime / Binary | Cold Start (median) | RSS Idle → Load | p50 Latency | p95 Latency | p99 Latency | Throughput |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **`gocloak-mcp` (`v0.2.0`, Go)** | **10.0 MB static binary** | **12.2 ms** | **15.3 → 16.3 MB** | **1.06 ms** | **1.30 ms** | **1.47 ms** | **954.7 req/s** |
-| [`HaithamOumerzoug/keycloak-mcp`](https://github.com/HaithamOumerzoug/keycloak-mcp) (`1.2.5`, TypeScript/Node 22) | Node.js 22 + `node_modules` | 68.5 ms *(5.6×)* | 64.1 → 88.7 MB *(5.4×)* | 1.23 ms | 2.20 ms | 2.42 ms | 728.2 req/s |
-| [`idoyudha/mcp-keycloak`](https://github.com/idoyudha/mcp-keycloak) (`v1.2.2`, Python 3.12/FastMCP) | Python 3.12 + venv | 359.3 ms *(29.5×)* | 61.0 → 64.2 MB *(3.9×)* | 3.66 ms | 3.92 ms | 4.01 ms | 271.5 req/s *(3.5× slower)* |
+| **`gocloak-mcp` (Go)** | **9.8 MB static binary** | **6.8 ms** | **13.5 → 15.9 MB** | **0.71 ms** | **1.00 ms** | **1.07 ms** | **1,312.9 req/s** |
+| [`MnemoShare/mnemoshare-keycloak-mcp`](https://github.com/MnemoShare/mnemoshare-keycloak-mcp) (Go) | 10.0 MB static binary | 12.0 ms *(1.8×)* | 13.8 → 17.1 MB | 0.74 ms | 1.12 ms | 1.16 ms | 1,227.5 req/s |
+| [`HaithamOumerzoug/keycloak-mcp`](https://github.com/HaithamOumerzoug/keycloak-mcp) (`1.2.5`, TypeScript/Node 22) | Node.js 22 + `node_modules` | 71.3 ms *(10.5×)* | 63.7 → 89.0 MB *(5.6×)* | 1.54 ms | 2.30 ms | 2.82 ms | 619.0 req/s *(2.1× slower)* |
+| [`idoyudha/mcp-keycloak`](https://github.com/idoyudha/mcp-keycloak) (`v1.2.2`, Python 3.12/FastMCP) | Python 3.12 + venv | 381.0 ms *(56.0×)* | 61.1 → 64.2 MB *(4.0×)* | 4.68 ms | 4.88 ms | 4.94 ms | 214.2 req/s *(6.1× slower)* |
 
 ### Streamable HTTP Transport (Remote / Kubernetes / Server)
 
@@ -64,22 +65,41 @@ Measured across 3 cold starts to ready `/mcp` `initialize` and 300 concurrent `t
 
 | Server | Binary / OCI Image | Cold Start (median) | RSS Idle → Load | p50 Latency | p95 Latency | p99 Latency | Throughput |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **`gocloak-mcp` (`v0.2.0`, Go)** | **10.0 MB / 21.4 MB** | **21.8 ms** | **14.4 → 19.5 MB** | **7.46 ms** | **13.13 ms** | **15.24 ms** | **1,194.9 req/s** |
-| [`sshaaf/keycloak-mcp-server`](https://github.com/sshaaf/keycloak-mcp-server) (`v0.4.0`, Java/Quarkus Native) | 74.1 MB binary | 43.2 ms *(2.0×)* | 71.6 → 158.8 MB *(8.1×)* | 9.83 ms | 22.21 ms | 27.77 ms | 214.1 req/s *(5.6× slower)* |
-| [`sshaaf/keycloak-mcp-server`](https://github.com/sshaaf/keycloak-mcp-server) (`v0.4.0`, Java/Quarkus JVM) | 23.4 MB JAR / 626 MB img | 1,249.8 ms *(57.3×)* | 196.7 → 319.9 MB *(16.4×)* | 35.60 ms | 72.44 ms | 92.31 ms | 251.8 req/s *(4.7× slower)* |
+| **`gocloak-mcp` (Go)** | **9.8 MB / 21.2 MB** | **21.9 ms** | **13.4 → 17.3 MB** | **5.77 ms** | **9.94 ms** | **12.33 ms** | **1,593.3 req/s** |
+| [`MnemoShare/mnemoshare-keycloak-mcp`](https://github.com/MnemoShare/mnemoshare-keycloak-mcp) (Go) | 10.0 MB binary | 21.0 ms | 14.1 → 17.7 MB | 5.29 ms | 9.96 ms | 11.38 ms | 1,710.8 req/s |
+| [`sshaaf/keycloak-mcp-server`](https://github.com/sshaaf/keycloak-mcp-server) (`v0.4.0`, Java/Quarkus Native) | 74.1 MB binary | 42.5 ms *(1.9×)* | 71.7 → 160.3 MB *(9.3×)* | 9.45 ms | 20.94 ms | 26.59 ms | 227.4 req/s *(7.0× slower)* |
+| [`sshaaf/keycloak-mcp-server`](https://github.com/sshaaf/keycloak-mcp-server) (`v0.4.0`, Java/Quarkus JVM) | 23.4 MB JAR / 626 MB img | 1,288.7 ms *(58.8×)* | 199.4 → 310.9 MB *(18.0×)* | 41.84 ms | 64.26 ms | 76.07 ms | 235.7 req/s *(6.8× slower)* |
+
+### `pprof` Optimization Proof (Baseline vs. Optimized)
+
+Saved CPU and heap profiles live in [`benchmarks/profiles/baseline/`](../benchmarks/profiles/baseline) and [`benchmarks/profiles/optimized/`](../benchmarks/profiles/optimized):
+
+| Benchmark | Baseline | Optimized | Improvement |
+| --- | ---: | ---: | ---: |
+| `BenchmarkEndToEndHTTPListUsers50` (local `pprof`) | 1,224.7 µs/op · 628 KB/op · 5,480 allocs/op | **735.7 µs/op · 408 KB/op · 1,124 allocs/op** | **-40.0% latency · -35.1% B/op · -79.5% allocs/op** |
+| Head-to-Head Stdio (`ubuntu-latest`) | 15.0 ms cold · 692.9 req/s | **6.8 ms cold · 1,312.9 req/s** | **2.2× faster cold start · +89.5% throughput** |
+| Head-to-Head Streamable HTTP (`ubuntu-latest`) | 9.44 ms p50 · 956.6 req/s | **5.77 ms p50 · 1,593.3 req/s** | **-38.9% p50 · +66.6% throughput** |
+
+Inspect the exact profile diff locally:
+
+```sh
+go tool pprof -top -cum -diff_base=benchmarks/profiles/baseline/e2e_http_cpu.prof benchmarks/profiles/optimized/e2e_http_cpu.prof
+go tool pprof -top -alloc_space -diff_base=benchmarks/profiles/baseline/e2e_http_mem.prof benchmarks/profiles/optimized/e2e_http_mem.prof
+```
 
 ### Security & Operational Footprint Comparison
 
-| Capability | `gocloak-mcp` (Go) | `sshaaf/keycloak-mcp-server` (Java) | `HaithamOumerzoug/keycloak-mcp` (TS) | `idoyudha/mcp-keycloak` (Python) |
-| --- | --- | --- | --- | --- |
-| **Transports** | **Stdio + Streamable HTTP** | Streamable HTTP / SSE | Stdio | Stdio + HTTP |
-| **Default Access Model** | **Strictly read-only (32 tools)** | Read + Write (178 ops) | Read + Write/Delete | Read + Write/Delete |
-| **Auth Model** | **OAuth2 Client Credentials (least-privilege service account)** | User JWT / OIDC | Master admin username + password | Username + password / client secret |
-| **Multi-Realm Allowlist** | **Yes (`KEYCLOAK_ALLOWED_REALMS`)** | No | No | No |
-| **OWASP MCP Top 10 Test Suite** | **Yes (10/10 automated)** | No | No | No |
-| **OCI Image Size** | **21.4 MB (distroless nonroot)** | 626 MB (UBI9 OpenJDK 21) | — | — |
-| **Distribution** | **GitHub Releases (6 platforms), Homebrew Cask, GHCR, MCP Registry** | GitHub Releases, Quay.io | npm / source | PyPI / source |
+| Capability | `gocloak-mcp` (Go) | `MnemoShare/mnemoshare-keycloak-mcp` (Go) | `sshaaf/keycloak-mcp-server` (Java) | `HaithamOumerzoug/keycloak-mcp` (TS) | `idoyudha/mcp-keycloak` (Python) |
+| --- | --- | --- | --- | --- | --- |
+| **Transports** | **Stdio + Streamable HTTP** | Stdio + Streamable HTTP | Streamable HTTP / SSE | Stdio | Stdio + HTTP |
+| **Default Access Model** | **Strictly read-only (32 tools)** | Read + Write/Delete (134 tools) | Read + Write (178 ops) | Read + Write/Delete | Read + Write/Delete |
+| **Auth Model** | **OAuth2 Client Credentials (least-privilege service account)** | Password or Client Credentials | User JWT / OIDC | Master admin username + password | Username + password / client secret |
+| **HTTP Auth & Origin Protection** | **Bearer token (≥32 chars) + Origin allowlist + security headers** | None built-in | OIDC JWT | N/A | Origin check (no Bearer auth) |
+| **Multi-Realm Allowlist** | **Yes (`KEYCLOAK_ALLOWED_REALMS`)** | No | No | No | No |
+| **OWASP MCP Top 10 Test Suite** | **Yes (10/10 automated)** | No | No | No | No |
+| **OCI Image Size** | **21.2 MB (distroless nonroot)** | — | 626 MB (UBI9 OpenJDK 21) | — | — |
+| **Distribution** | **GitHub Releases (6 platforms), Homebrew Cask, GHCR, MCP Registry** | Source / Docker | GitHub Releases, Quay.io | npm / source | PyPI / source |
 
 **Key takeaways:**
-- **5.6× faster cold start** and **5.4× less RAM** than TypeScript/Node (`HaithamOumerzoug/keycloak-mcp`), and **29.5× faster cold start** / **3.5× higher throughput** than Python/FastMCP (`idoyudha/mcp-keycloak`) over Stdio.
-- **5.6× higher HTTP throughput**, **8.1× less RAM**, and a **7.4× smaller binary** than Java/Quarkus GraalVM Native (`sshaaf/keycloak-mcp-server`), and **57× faster cold start**, **16.4× less RAM**, and a **29× smaller container image** (21.4 MB vs. 626 MB) than Quarkus JVM.
+- **#1 overall on Stdio** — beats every competitor including Go (`MnemoShare`: **1.8× faster cold start**, **+7% higher throughput**, lower RSS), TypeScript/Node (**10.5× faster cold start**, **5.6× less RAM**), and Python/FastMCP (**56× faster cold start**, **6.1× higher throughput**) while running allowlist DTO sanitization and structured audit logging on every call.
+- **Streamable HTTP:** **7.0× higher throughput**, **9.3× less RAM**, and a **7.6× smaller binary** than Java/Quarkus Native; **6.8× higher throughput**, **18× less RAM**, and a **29.5× smaller container image** (21.2 MB vs. 626 MB) than Quarkus JVM; matches Go `MnemoShare` on p95 latency (9.94 ms vs. 9.96 ms) with lower RSS and full HTTP Bearer/Origin security middleware.

@@ -66,7 +66,7 @@ func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
 		Name:        "list_authentication_flows",
 		Description: "List authentication flows configured in a Keycloak realm.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, authFlowsOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "list_authentication_flows", func(rCtx context.Context) (authFlowsOutput, error) {
 			flows, callErr := deps.service.ListAuthenticationFlows(rCtx, in.Realm)
 			return authFlowsOutput{Flows: flows}, sanitizeErr(callErr)
@@ -77,7 +77,7 @@ func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
 		Name:        "get_flow_executions",
 		Description: "List executions within a Keycloak authentication flow.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in flowAliasInput) (*mcp.CallToolResult, flowExecutionsOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in flowAliasInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "get_flow_executions", func(rCtx context.Context) (flowExecutionsOutput, error) {
 			execs, callErr := deps.service.GetFlowExecutions(rCtx, in.Realm, in.FlowAlias)
 			return flowExecutionsOutput{Executions: execs}, sanitizeErr(callErr)
@@ -88,7 +88,7 @@ func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
 		Name:        "list_required_actions",
 		Description: "List required actions configured in a Keycloak realm.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, requiredActionsOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "list_required_actions", func(rCtx context.Context) (requiredActionsOutput, error) {
 			actions, callErr := deps.service.ListRequiredActions(rCtx, in.Realm)
 			return requiredActionsOutput{RequiredActions: actions}, sanitizeErr(callErr)
@@ -101,7 +101,7 @@ func registerIdentityProviderTools(server *mcp.Server, deps toolDeps) {
 		Name:        "list_identity_providers",
 		Description: "List identity providers in a Keycloak realm (without secret config).",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, identityProvidersOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "list_identity_providers", func(rCtx context.Context) (identityProvidersOutput, error) {
 			idps, callErr := deps.service.ListIdentityProviders(rCtx, in.Realm)
 			return identityProvidersOutput{IdentityProviders: idps}, sanitizeErr(callErr)
@@ -112,7 +112,7 @@ func registerIdentityProviderTools(server *mcp.Server, deps toolDeps) {
 		Name:        "get_identity_provider",
 		Description: "Get safe metadata for a single identity provider by alias.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in idpAliasInput) (*mcp.CallToolResult, keycloak.IdentityProviderInfo, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in idpAliasInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "get_identity_provider", func(rCtx context.Context) (keycloak.IdentityProviderInfo, error) {
 			res, callErr := deps.service.GetIdentityProvider(rCtx, in.Realm, in.Alias)
 			return res, sanitizeErr(callErr)
@@ -125,10 +125,10 @@ func registerOrganizationTools(server *mcp.Server, deps toolDeps) {
 		Name:        "list_organizations",
 		Description: "List Keycloak 26+ organizations in a realm.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listOrgsInput) (*mcp.CallToolResult, organizationsOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listOrgsInput) (*mcp.CallToolResult, any, error) {
 		first, maxSize, err := validatePage(in.pageInput)
 		if err != nil {
-			return nil, organizationsOutput{}, err
+			return nil, nil, err
 		}
 		return executeTool(ctx, deps, "list_organizations", func(rCtx context.Context) (organizationsOutput, error) {
 			orgs, callErr := deps.service.ListOrganizations(rCtx, in.Realm, first, maxSize, in.Search)
@@ -140,10 +140,10 @@ func registerOrganizationTools(server *mcp.Server, deps toolDeps) {
 		Name:        "get_organization_members",
 		Description: "List members of a Keycloak 26+ organization.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in orgMembersInput) (*mcp.CallToolResult, orgMembersOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in orgMembersInput) (*mcp.CallToolResult, any, error) {
 		first, maxSize, err := validatePage(in.pageInput)
 		if err != nil {
-			return nil, orgMembersOutput{}, err
+			return nil, nil, err
 		}
 		return executeTool(ctx, deps, "get_organization_members", func(rCtx context.Context) (orgMembersOutput, error) {
 			members, callErr := deps.service.GetOrganizationMembers(rCtx, in.Realm, in.OrganizationID, first, maxSize, in.Search)

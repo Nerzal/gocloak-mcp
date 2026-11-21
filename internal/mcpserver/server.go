@@ -3,6 +3,7 @@ package mcpserver
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"time"
@@ -80,8 +81,7 @@ func executeTool[T any](
 	deps toolDeps,
 	toolName string,
 	fn func(context.Context) (T, error),
-) (*mcp.CallToolResult, T, error) {
-	var zero T
+) (*mcp.CallToolResult, any, error) {
 	started := time.Now()
 	requestCtx, cancel := context.WithTimeout(ctx, deps.timeout)
 	defer cancel()
@@ -89,10 +89,17 @@ func executeTool[T any](
 	durationMS := time.Since(started).Milliseconds()
 	if err != nil {
 		auditToolCall(deps.logger, toolName, "error", durationMS)
-		return nil, zero, errors.New("keycloak request failed")
+		return nil, nil, errors.New("keycloak request failed")
+	}
+	encoded, err := json.Marshal(result)
+	if err != nil {
+		auditToolCall(deps.logger, toolName, "error", durationMS)
+		return nil, nil, errors.New("keycloak response encoding failed")
 	}
 	auditToolCall(deps.logger, toolName, "ok", durationMS)
-	return nil, result, nil
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{&mcp.TextContent{Text: string(encoded)}},
+	}, nil, nil
 }
 
 func auditToolCall(logger *slog.Logger, tool, outcome string, durationMS int64) {

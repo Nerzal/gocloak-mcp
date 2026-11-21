@@ -50,7 +50,7 @@ func registerRealmInfoTools(server *mcp.Server, deps toolDeps) {
 		Name:        "list_realms",
 		Description: "List accessible Keycloak realms permitted by KEYCLOAK_ALLOWED_REALMS.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, realmsOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "list_realms", func(rCtx context.Context) (realmsOutput, error) {
 			realms, callErr := deps.service.ListRealms(rCtx)
 			return realmsOutput{Realms: realms}, sanitizeErr(callErr)
@@ -61,7 +61,7 @@ func registerRealmInfoTools(server *mcp.Server, deps toolDeps) {
 		Name:        "get_realm_info",
 		Description: "Get basic information about a configured Keycloak realm.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, keycloak.RealmInfo, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "get_realm_info", func(rCtx context.Context) (keycloak.RealmInfo, error) {
 			res, callErr := deps.service.GetRealmInfo(rCtx, in.Realm)
 			return res, sanitizeErr(callErr)
@@ -74,10 +74,10 @@ func registerEventTools(server *mcp.Server, deps toolDeps) {
 		Name:        "list_events",
 		Description: "List login/user events in a Keycloak realm.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listEventsInput) (*mcp.CallToolResult, eventsOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listEventsInput) (*mcp.CallToolResult, any, error) {
 		first, maxSize, err := validatePage(in.pageInput)
 		if err != nil {
-			return nil, eventsOutput{}, err
+			return nil, nil, err
 		}
 		filter := keycloak.EventFilter{
 			Type: in.Type, Client: in.Client, UserID: in.UserID, DateFrom: in.DateFrom, DateTo: in.DateTo,
@@ -92,10 +92,10 @@ func registerEventTools(server *mcp.Server, deps toolDeps) {
 		Name:        "list_admin_events",
 		Description: "List admin audit events in a Keycloak realm (without raw secret payloads).",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listAdminEventsInput) (*mcp.CallToolResult, adminEventsOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listAdminEventsInput) (*mcp.CallToolResult, any, error) {
 		first, maxSize, err := validatePage(in.pageInput)
 		if err != nil {
-			return nil, adminEventsOutput{}, err
+			return nil, nil, err
 		}
 		filter := keycloak.AdminEventFilter{
 			OperationTypes: in.OperationTypes, ResourceTypes: in.ResourceTypes,

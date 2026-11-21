@@ -23,7 +23,10 @@ func NewHTTPServer(server *mcp.Server, addr, bearerToken string, allowedOrigins 
 	mux := http.NewServeMux()
 	mcpHandler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server {
 		return server
-	}, &mcp.StreamableHTTPOptions{Logger: logger})
+	}, &mcp.StreamableHTTPOptions{
+		Logger:       logger,
+		JSONResponse: true,
+	})
 
 	originAllowed := toOriginSet(allowedOrigins)
 	mcpChain := withSecurityHeaders(withOriginCheck(withBearerAuth(mcpHandler, bearerToken), originAllowed))
