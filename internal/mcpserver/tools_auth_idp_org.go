@@ -8,9 +8,24 @@ import (
 	"github.com/Nerzal/gocloak-mcp/internal/keycloak"
 )
 
+type flowIDInput struct {
+	realmInput
+	FlowID string `json:"flowId" jsonschema:"authentication flow UUID"`
+}
+
 type flowAliasInput struct {
 	realmInput
 	FlowAlias string `json:"flowAlias" jsonschema:"authentication flow alias (e.g. browser)"`
+}
+
+type authenticatorConfigIDInput struct {
+	realmInput
+	ConfigID string `json:"configId" jsonschema:"authenticator configuration UUID"`
+}
+
+type requiredActionAliasInput struct {
+	realmInput
+	Alias string `json:"alias" jsonschema:"required action alias (e.g. CONFIGURE_TOTP)"`
 }
 
 type idpAliasInput struct {
@@ -18,17 +33,10 @@ type idpAliasInput struct {
 	Alias string `json:"alias" jsonschema:"identity provider alias"`
 }
 
-type listOrgsInput struct {
+type idpMapperIDInput struct {
 	realmInput
-	pageInput
-	Search string `json:"search,omitempty" jsonschema:"optional organization search query"`
-}
-
-type orgMembersInput struct {
-	realmInput
-	pageInput
-	OrganizationID string `json:"organizationId" jsonschema:"Keycloak organization UUID"`
-	Search         string `json:"search,omitempty" jsonschema:"optional member search query"`
+	Alias    string `json:"alias" jsonschema:"identity provider alias"`
+	MapperID string `json:"mapperId" jsonschema:"identity provider mapper UUID"`
 }
 
 type authFlowsOutput struct {
@@ -43,22 +51,22 @@ type requiredActionsOutput struct {
 	RequiredActions []keycloak.RequiredActionInfo `json:"requiredActions"`
 }
 
+type unregisteredRequiredActionsOutput struct {
+	RequiredActions []keycloak.UnregisteredRequiredActionInfo `json:"requiredActions"`
+}
+
 type identityProvidersOutput struct {
 	IdentityProviders []keycloak.IdentityProviderInfo `json:"identityProviders"`
 }
 
-type organizationsOutput struct {
-	Organizations []keycloak.OrganizationInfo `json:"organizations"`
-}
-
-type orgMembersOutput struct {
-	Members []keycloak.OrganizationMember `json:"members"`
+type identityProviderMappersOutput struct {
+	Mappers []keycloak.IdentityProviderMapperInfo `json:"mappers"`
 }
 
 func registerAuthIDPOrgTools(server *mcp.Server, deps toolDeps) {
 	registerAuthFlowTools(server, deps)
+	registerRequiredActionTools(server, deps)
 	registerIdentityProviderTools(server, deps)
-	registerOrganizationTools(server, deps)
 }
 
 func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
@@ -74,6 +82,17 @@ func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
 	})
 
 	addFastTool(server, &mcp.Tool{
+		Name:        "get_authentication_flow",
+		Description: "Get a single authentication flow by UUID.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in flowIDInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_authentication_flow", func(rCtx context.Context) (keycloak.AuthFlowInfo, error) {
+			res, callErr := deps.service.GetAuthenticationFlow(rCtx, in.Realm, in.FlowID)
+			return res, sanitizeErr(callErr)
+		})
+	})
+
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_flow_executions",
 		Description: "List executions within a Keycloak authentication flow.",
 		Annotations: deps.annotations,
@@ -85,6 +104,19 @@ func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
 	})
 
 	addFastTool(server, &mcp.Tool{
+		Name:        "get_authenticator_config",
+		Description: "Get safe authenticator execution configuration by config UUID (redacting secret keys).",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in authenticatorConfigIDInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_authenticator_config", func(rCtx context.Context) (keycloak.AuthenticatorConfigInfo, error) {
+			res, callErr := deps.service.GetAuthenticatorConfig(rCtx, in.Realm, in.ConfigID)
+			return res, sanitizeErr(callErr)
+		})
+	})
+}
+
+func registerRequiredActionTools(server *mcp.Server, deps toolDeps) {
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_required_actions",
 		Description: "List required actions configured in a Keycloak realm.",
 		Annotations: deps.annotations,
@@ -92,6 +124,28 @@ func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
 		return executeTool(ctx, deps, "list_required_actions", func(rCtx context.Context) (requiredActionsOutput, error) {
 			actions, callErr := deps.service.ListRequiredActions(rCtx, in.Realm)
 			return requiredActionsOutput{RequiredActions: actions}, sanitizeErr(callErr)
+		})
+	})
+
+	addFastTool(server, &mcp.Tool{
+		Name:        "get_required_action",
+		Description: "Get a single required action by alias.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in requiredActionAliasInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_required_action", func(rCtx context.Context) (keycloak.RequiredActionInfo, error) {
+			res, callErr := deps.service.GetRequiredAction(rCtx, in.Realm, in.Alias)
+			return res, sanitizeErr(callErr)
+		})
+	})
+
+	addFastTool(server, &mcp.Tool{
+		Name:        "list_unregistered_required_actions",
+		Description: "List available unregistered required actions in a Keycloak realm.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "list_unregistered_required_actions", func(rCtx context.Context) (unregisteredRequiredActionsOutput, error) {
+			actions, callErr := deps.service.ListUnregisteredRequiredActions(rCtx, in.Realm)
+			return unregisteredRequiredActionsOutput{RequiredActions: actions}, sanitizeErr(callErr)
 		})
 	})
 }
@@ -118,36 +172,26 @@ func registerIdentityProviderTools(server *mcp.Server, deps toolDeps) {
 			return res, sanitizeErr(callErr)
 		})
 	})
-}
 
-func registerOrganizationTools(server *mcp.Server, deps toolDeps) {
 	addFastTool(server, &mcp.Tool{
-		Name:        "list_organizations",
-		Description: "List Keycloak 26+ organizations in a realm.",
+		Name:        "list_identity_provider_mappers",
+		Description: "List mappers configured for a Keycloak identity provider (without secret config).",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listOrgsInput) (*mcp.CallToolResult, any, error) {
-		first, maxSize, err := validatePage(in.pageInput)
-		if err != nil {
-			return nil, nil, err
-		}
-		return executeTool(ctx, deps, "list_organizations", func(rCtx context.Context) (organizationsOutput, error) {
-			orgs, callErr := deps.service.ListOrganizations(rCtx, in.Realm, first, maxSize, in.Search)
-			return organizationsOutput{Organizations: orgs}, sanitizeErr(callErr)
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in idpAliasInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "list_identity_provider_mappers", func(rCtx context.Context) (identityProviderMappersOutput, error) {
+			mappers, callErr := deps.service.ListIdentityProviderMappers(rCtx, in.Realm, in.Alias)
+			return identityProviderMappersOutput{Mappers: mappers}, sanitizeErr(callErr)
 		})
 	})
 
 	addFastTool(server, &mcp.Tool{
-		Name:        "get_organization_members",
-		Description: "List members of a Keycloak 26+ organization.",
+		Name:        "get_identity_provider_mapper",
+		Description: "Get a single identity provider mapper by alias and mapper UUID.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in orgMembersInput) (*mcp.CallToolResult, any, error) {
-		first, maxSize, err := validatePage(in.pageInput)
-		if err != nil {
-			return nil, nil, err
-		}
-		return executeTool(ctx, deps, "get_organization_members", func(rCtx context.Context) (orgMembersOutput, error) {
-			members, callErr := deps.service.GetOrganizationMembers(rCtx, in.Realm, in.OrganizationID, first, maxSize, in.Search)
-			return orgMembersOutput{Members: members}, sanitizeErr(callErr)
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in idpMapperIDInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_identity_provider_mapper", func(rCtx context.Context) (keycloak.IdentityProviderMapperInfo, error) {
+			res, callErr := deps.service.GetIdentityProviderMapper(rCtx, in.Realm, in.Alias, in.MapperID)
+			return res, sanitizeErr(callErr)
 		})
 	})
 }

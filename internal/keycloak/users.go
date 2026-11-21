@@ -2,7 +2,6 @@ package keycloak
 
 import (
 	"context"
-	"maps"
 
 	"github.com/Nerzal/gocloak/v15"
 )
@@ -74,6 +73,30 @@ func (s *service) GetUserSessions(ctx context.Context, realm, userID string) ([]
 	return mapUserSessions(sessions), nil
 }
 
+func (s *service) GetUserOfflineSessions(ctx context.Context, realm, userID, clientUUID string) ([]UserSession, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return nil, err
+	}
+	if valErr := validateIdentifier(userID); valErr != nil {
+		return nil, valErr
+	}
+	if valErr := validateIdentifier(clientUUID); valErr != nil {
+		return nil, valErr
+	}
+	sessions, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.UserSessionRepresentation, error) {
+		res, callErr := s.client.GetUserOfflineSessionsForClient(ctx, token, targetRealm, userID, clientUUID)
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		return res, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapUserSessions(sessions), nil
+}
+
 func (s *service) GetUserGroups(ctx context.Context, realm, userID string, first, pageSize int) ([]GroupInfo, error) {
 	targetRealm, err := s.resolveRealm(realm)
 	if err != nil {
@@ -109,6 +132,132 @@ func (s *service) GetUserRoles(ctx context.Context, realm, userID string) (RoleM
 		return RoleMappings{}, err
 	}
 	return mapRoleMappings(mappings), nil
+}
+
+func (s *service) GetUserCredentials(ctx context.Context, realm, userID string) ([]UserCredentialInfo, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return nil, err
+	}
+	if valErr := validateIdentifier(userID); valErr != nil {
+		return nil, valErr
+	}
+	creds, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.CredentialRepresentation, error) {
+		res, callErr := s.client.GetCredentials(ctx, token, targetRealm, userID)
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		return res, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapUserCredentials(creds), nil
+}
+
+func (s *service) GetUserFederatedIdentities(ctx context.Context, realm, userID string) ([]FederatedIdentityInfo, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return nil, err
+	}
+	if valErr := validateIdentifier(userID); valErr != nil {
+		return nil, valErr
+	}
+	ids, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.FederatedIdentityRepresentation, error) {
+		res, callErr := s.client.GetUserFederatedIdentities(ctx, token, targetRealm, userID)
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		return res, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapFederatedIdentities(ids), nil
+}
+
+func (s *service) GetUserBruteForceStatus(ctx context.Context, realm, userID string) (BruteForceStatusInfo, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return BruteForceStatusInfo{}, err
+	}
+	if valErr := validateIdentifier(userID); valErr != nil {
+		return BruteForceStatusInfo{}, valErr
+	}
+	status, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.BruteForceStatus, error) {
+		res, callErr := s.client.GetUserBruteForceDetectionStatus(ctx, token, targetRealm, userID)
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		if res == nil {
+			return nil, errKeycloakRequest
+		}
+		return res, nil
+	})
+	if err != nil {
+		return BruteForceStatusInfo{}, err
+	}
+	return BruteForceStatusInfo{
+		NumFailures:   status.NumFailures,
+		Disabled:      status.Disabled,
+		LastIPFailure: sanitizeOutputString(status.LastIPFailure),
+		LastFailure:   status.LastFailure,
+	}, nil
+}
+
+func (s *service) GetUserCompositeRealmRoles(ctx context.Context, realm, userID string) ([]RoleInfo, error) {
+	return s.fetchUserRoleList(ctx, realm, userID, "", false, func(token, targetRealm string) ([]*gocloak.Role, error) {
+		return s.client.GetCompositeRealmRolesByUserID(ctx, token, targetRealm, userID)
+	})
+}
+
+func (s *service) GetUserCompositeClientRoles(ctx context.Context, realm, userID, clientUUID string) ([]RoleInfo, error) {
+	return s.fetchUserRoleList(ctx, realm, userID, clientUUID, true, func(token, targetRealm string) ([]*gocloak.Role, error) {
+		return s.client.GetCompositeClientRolesByUserID(ctx, token, targetRealm, clientUUID, userID)
+	})
+}
+
+func (s *service) GetUserAvailableRealmRoles(ctx context.Context, realm, userID string) ([]RoleInfo, error) {
+	return s.fetchUserRoleList(ctx, realm, userID, "", false, func(token, targetRealm string) ([]*gocloak.Role, error) {
+		return s.client.GetAvailableRealmRolesByUserID(ctx, token, targetRealm, userID)
+	})
+}
+
+func (s *service) GetUserAvailableClientRoles(ctx context.Context, realm, userID, clientUUID string) ([]RoleInfo, error) {
+	return s.fetchUserRoleList(ctx, realm, userID, clientUUID, true, func(token, targetRealm string) ([]*gocloak.Role, error) {
+		return s.client.GetAvailableClientRolesByUserID(ctx, token, targetRealm, clientUUID, userID)
+	})
+}
+
+func (s *service) fetchUserRoleList(
+	ctx context.Context,
+	realm, userID, clientUUID string,
+	requireClient bool,
+	fetch func(token, targetRealm string) ([]*gocloak.Role, error),
+) ([]RoleInfo, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return nil, err
+	}
+	if valErr := validateIdentifier(userID); valErr != nil {
+		return nil, valErr
+	}
+	if requireClient {
+		if valErr := validateIdentifier(clientUUID); valErr != nil {
+			return nil, valErr
+		}
+	}
+	roles, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Role, error) {
+		res, callErr := fetch(token, targetRealm)
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		return res, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapRoles(roles), nil
 }
 
 func validateUserFilter(filter UserFilter) error {
@@ -225,7 +374,10 @@ func mapUserSessions(sessions []*gocloak.UserSessionRepresentation) []UserSessio
 		}
 		var clients map[string]string
 		if len(session.Clients) > 0 {
-			clients = maps.Clone(session.Clients)
+			clients = make(map[string]string, len(session.Clients))
+			for k, v := range session.Clients {
+				clients[sanitizeOutputString(k)] = sanitizeOutputString(v)
+			}
 		}
 		result = append(result, UserSession{
 			ID:         sanitizeOutputString(session.ID),
@@ -234,6 +386,39 @@ func mapUserSessions(sessions []*gocloak.UserSessionRepresentation) []UserSessio
 			Start:      session.Start,
 			LastAccess: session.LastAccess,
 			Clients:    clients,
+		})
+	}
+	return result
+}
+
+func mapUserCredentials(creds []*gocloak.CredentialRepresentation) []UserCredentialInfo {
+	result := make([]UserCredentialInfo, 0, len(creds))
+	for _, cred := range creds {
+		if cred == nil {
+			continue
+		}
+		result = append(result, UserCredentialInfo{
+			ID:          derefString(cred.ID),
+			Type:        derefString(cred.Type),
+			UserLabel:   derefString(cred.UserLabel),
+			CreatedDate: derefInt64(cred.CreatedDate),
+			Priority:    derefInt32(cred.Priority),
+			Temporary:   derefBool(cred.Temporary),
+		})
+	}
+	return result
+}
+
+func mapFederatedIdentities(ids []*gocloak.FederatedIdentityRepresentation) []FederatedIdentityInfo {
+	result := make([]FederatedIdentityInfo, 0, len(ids))
+	for _, id := range ids {
+		if id == nil {
+			continue
+		}
+		result = append(result, FederatedIdentityInfo{
+			IdentityProvider: sanitizeOutputString(id.IdentityProvider),
+			UserID:           sanitizeOutputString(id.UserID),
+			UserName:         sanitizeOutputString(id.UserName),
 		})
 	}
 	return result

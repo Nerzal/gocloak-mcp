@@ -43,6 +43,72 @@ func (s *service) GetRealmRole(ctx context.Context, realm, roleName string) (Rol
 	return mapRole(role), nil
 }
 
+func (s *service) GetRoleByID(ctx context.Context, realm, roleID string) (RoleInfo, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return RoleInfo{}, err
+	}
+	if valErr := validateIdentifier(roleID); valErr != nil {
+		return RoleInfo{}, valErr
+	}
+	role, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.Role, error) {
+		res, callErr := s.client.GetRealmRoleByID(ctx, token, targetRealm, roleID)
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		if res == nil {
+			return nil, errKeycloakRequest
+		}
+		return res, nil
+	})
+	if err != nil {
+		return RoleInfo{}, err
+	}
+	return mapRole(role), nil
+}
+
+func (s *service) GetRealmRoleComposites(ctx context.Context, realm, roleName string) ([]RoleInfo, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return nil, err
+	}
+	if valErr := validateIdentifier(roleName); valErr != nil {
+		return nil, valErr
+	}
+	roles, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Role, error) {
+		res, callErr := s.client.GetCompositeRealmRoles(ctx, token, targetRealm, roleName)
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		return res, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapRoles(roles), nil
+}
+
+func (s *service) GetRoleCompositesByID(ctx context.Context, realm, roleID string) ([]RoleInfo, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return nil, err
+	}
+	if valErr := validateIdentifier(roleID); valErr != nil {
+		return nil, valErr
+	}
+	roles, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Role, error) {
+		res, callErr := s.client.GetCompositeRolesByRoleID(ctx, token, targetRealm, roleID)
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		return res, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapRoles(roles), nil
+}
+
 func (s *service) GetUsersInRole(ctx context.Context, realm, roleName string, first, pageSize int) ([]User, error) {
 	targetRealm, err := s.resolveRealm(realm)
 	if err != nil {
@@ -84,6 +150,51 @@ func (s *service) GetUsersInClientRole(ctx context.Context, realm, clientUUID, r
 		return nil, err
 	}
 	return mapUsers(users), nil
+}
+
+func (s *service) GetGroupsInRole(ctx context.Context, realm, roleName string) ([]GroupInfo, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return nil, err
+	}
+	if valErr := validateIdentifier(roleName); valErr != nil {
+		return nil, valErr
+	}
+	groups, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Group, error) {
+		res, callErr := s.client.GetGroupsByRole(ctx, token, targetRealm, roleName)
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		return res, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapGroups(groups), nil
+}
+
+func (s *service) GetGroupsInClientRole(ctx context.Context, realm, clientUUID, roleName string) ([]GroupInfo, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return nil, err
+	}
+	if valErr := validateIdentifier(clientUUID); valErr != nil {
+		return nil, valErr
+	}
+	if valErr := validateIdentifier(roleName); valErr != nil {
+		return nil, valErr
+	}
+	groups, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Group, error) {
+		res, callErr := s.client.GetGroupsByClientRole(ctx, token, targetRealm, roleName, clientUUID)
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		return res, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapGroups(groups), nil
 }
 
 func (s *service) fetchRealmRoles(ctx context.Context, token, realm string, first, pageSize int, search string) ([]*gocloak.Role, error) {
@@ -173,7 +284,7 @@ func mapRoleMappings(mappings *gocloak.MappingsRepresentation) RoleMappings {
 	}
 	result.ClientRoles = make(map[string][]RoleInfo, len(mappings.ClientMappings))
 	for clientName, mapping := range mappings.ClientMappings {
-		result.ClientRoles[clientName] = mapRoleValues(mapping.Mappings)
+		result.ClientRoles[sanitizeOutputString(clientName)] = mapRoleValues(mapping.Mappings)
 	}
 	return result
 }

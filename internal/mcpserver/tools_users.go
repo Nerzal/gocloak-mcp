@@ -30,6 +30,12 @@ type userIDInput struct {
 	UserID string `json:"userId" jsonschema:"Keycloak user UUID"`
 }
 
+type userClientInput struct {
+	realmInput
+	UserID     string `json:"userId" jsonschema:"Keycloak user UUID"`
+	ClientUUID string `json:"clientUuid" jsonschema:"internal Keycloak client UUID"`
+}
+
 type userGroupsInput struct {
 	realmInput
 	pageInput
@@ -44,9 +50,19 @@ type userSessionsOutput struct {
 	Sessions []keycloak.UserSession `json:"sessions"`
 }
 
+type userCredentialsOutput struct {
+	Credentials []keycloak.UserCredentialInfo `json:"credentials"`
+}
+
+type federatedIdentitiesOutput struct {
+	Identities []keycloak.FederatedIdentityInfo `json:"identities"`
+}
+
 func registerUserTools(server *mcp.Server, deps toolDeps) {
 	registerListAndGetUsers(server, deps)
 	registerUserRelations(server, deps)
+	registerUserSecurityTools(server, deps)
+	registerUserEffectiveRoleTools(server, deps)
 }
 
 func registerListAndGetUsers(server *mcp.Server, deps toolDeps) {
@@ -103,6 +119,17 @@ func registerUserRelations(server *mcp.Server, deps toolDeps) {
 	})
 
 	addFastTool(server, &mcp.Tool{
+		Name:        "get_user_offline_sessions",
+		Description: "List offline sessions for a Keycloak user on a specific client.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in userClientInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_user_offline_sessions", func(rCtx context.Context) (userSessionsOutput, error) {
+			sessions, callErr := deps.service.GetUserOfflineSessions(rCtx, in.Realm, in.UserID, in.ClientUUID)
+			return userSessionsOutput{Sessions: sessions}, sanitizeErr(callErr)
+		})
+	})
+
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_user_groups",
 		Description: "List groups a Keycloak user belongs to.",
 		Annotations: deps.annotations,
@@ -125,6 +152,87 @@ func registerUserRelations(server *mcp.Server, deps toolDeps) {
 		return executeTool(ctx, deps, "get_user_roles", func(rCtx context.Context) (keycloak.RoleMappings, error) {
 			res, callErr := deps.service.GetUserRoles(rCtx, in.Realm, in.UserID)
 			return res, sanitizeErr(callErr)
+		})
+	})
+}
+
+func registerUserSecurityTools(server *mcp.Server, deps toolDeps) {
+	addFastTool(server, &mcp.Tool{
+		Name:        "get_user_credentials",
+		Description: "List safe credential metadata (type, label, createdDate) for a user without exposing secret hashes or values.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in userIDInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_user_credentials", func(rCtx context.Context) (userCredentialsOutput, error) {
+			creds, callErr := deps.service.GetUserCredentials(rCtx, in.Realm, in.UserID)
+			return userCredentialsOutput{Credentials: creds}, sanitizeErr(callErr)
+		})
+	})
+
+	addFastTool(server, &mcp.Tool{
+		Name:        "get_user_federated_identities",
+		Description: "List external identity provider links associated with a Keycloak user.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in userIDInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_user_federated_identities", func(rCtx context.Context) (federatedIdentitiesOutput, error) {
+			ids, callErr := deps.service.GetUserFederatedIdentities(rCtx, in.Realm, in.UserID)
+			return federatedIdentitiesOutput{Identities: ids}, sanitizeErr(callErr)
+		})
+	})
+
+	addFastTool(server, &mcp.Tool{
+		Name:        "get_user_brute_force_status",
+		Description: "Get brute-force attack detection and lockout status for a Keycloak user.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in userIDInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_user_brute_force_status", func(rCtx context.Context) (keycloak.BruteForceStatusInfo, error) {
+			res, callErr := deps.service.GetUserBruteForceStatus(rCtx, in.Realm, in.UserID)
+			return res, sanitizeErr(callErr)
+		})
+	})
+}
+
+func registerUserEffectiveRoleTools(server *mcp.Server, deps toolDeps) {
+	addFastTool(server, &mcp.Tool{
+		Name:        "get_user_composite_realm_roles",
+		Description: "List effective realm roles for a user including roles inherited through composites and groups.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in userIDInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_user_composite_realm_roles", func(rCtx context.Context) (rolesOutput, error) {
+			roles, callErr := deps.service.GetUserCompositeRealmRoles(rCtx, in.Realm, in.UserID)
+			return rolesOutput{Roles: roles}, sanitizeErr(callErr)
+		})
+	})
+
+	addFastTool(server, &mcp.Tool{
+		Name:        "get_user_composite_client_roles",
+		Description: "List effective client roles for a user including roles inherited through composites and groups.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in userClientInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_user_composite_client_roles", func(rCtx context.Context) (rolesOutput, error) {
+			roles, callErr := deps.service.GetUserCompositeClientRoles(rCtx, in.Realm, in.UserID, in.ClientUUID)
+			return rolesOutput{Roles: roles}, sanitizeErr(callErr)
+		})
+	})
+
+	addFastTool(server, &mcp.Tool{
+		Name:        "get_user_available_realm_roles",
+		Description: "List realm roles available to assign to a Keycloak user.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in userIDInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_user_available_realm_roles", func(rCtx context.Context) (rolesOutput, error) {
+			roles, callErr := deps.service.GetUserAvailableRealmRoles(rCtx, in.Realm, in.UserID)
+			return rolesOutput{Roles: roles}, sanitizeErr(callErr)
+		})
+	})
+
+	addFastTool(server, &mcp.Tool{
+		Name:        "get_user_available_client_roles",
+		Description: "List client roles available to assign to a Keycloak user.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in userClientInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_user_available_client_roles", func(rCtx context.Context) (rolesOutput, error) {
+			roles, callErr := deps.service.GetUserAvailableClientRoles(rCtx, in.Realm, in.UserID, in.ClientUUID)
+			return rolesOutput{Roles: roles}, sanitizeErr(callErr)
 		})
 	})
 }
