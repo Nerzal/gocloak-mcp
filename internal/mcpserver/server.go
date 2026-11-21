@@ -50,7 +50,7 @@ func New(service Service, timeout time.Duration, logger *slog.Logger) *mcp.Serve
 	}
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    "gocloak-mcp",
-		Version: "0.2.0",
+		Version: "0.3.0",
 	}, &mcp.ServerOptions{Logger: logger})
 
 	deps := toolDeps{
