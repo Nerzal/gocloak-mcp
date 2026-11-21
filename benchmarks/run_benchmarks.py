@@ -67,6 +67,7 @@ MOCK_REALM_BYTES = json.dumps({"id": "example", "realm": "example", "enabled": T
 
 class MockKeycloakHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
+    disable_nagle_algorithm = True
 
     def log_message(self, format: str, *args: Any) -> None:
         return
@@ -359,9 +360,15 @@ def http_post_mcp(
     payload: dict[str, Any],
     session_id: str | None = None,
     timeout: float = 15.0,
+    conn: http.client.HTTPConnection | None = None,
 ) -> tuple[int, dict[str, str], dict[str, Any]]:
-    conn = http.client.HTTPConnection(host, port, timeout=timeout)
+    owned = conn is None
+    if conn is None:
+        conn = http.client.HTTPConnection(host, port, timeout=timeout)
     try:
+        if conn.sock is None:
+            conn.connect()
+            conn.sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json, text/event-stream",
@@ -379,7 +386,8 @@ def http_post_mcp(
         )
         return resp.status, resp_headers, parsed
     finally:
-        conn.close()
+        if owned:
+            conn.close()
 
 
 def http_init_session(host: str, port: int, path: str) -> str | None:

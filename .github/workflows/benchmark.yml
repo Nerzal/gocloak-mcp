@@ -56,16 +56,20 @@ jobs:
           set -euo pipefail
           git clone --depth 1 --branch v1.2.2 https://github.com/idoyudha/mcp-keycloak.git /tmp/bench/idoyudha
           python3 -m venv /tmp/bench/idoyudha/.venv
-          /tmp/bench/idoyudha/.venv/bin/pip install --quiet /tmp/bench/idoyudha
+          /tmp/bench/idoyudha/.venv/bin/pip install --quiet "mcp<2" /tmp/bench/idoyudha
 
       - name: Measure OCI container image sizes
         run: |
           set -euo pipefail
           docker build -q -t gocloak-mcp:bench .
           docker pull -q quay.io/sshaaf/keycloak-mcp-server:latest || true
-          echo "### Container Image Sizes" >> "$GITHUB_STEP_SUMMARY"
-          docker images --format "| {{.Repository}}:{{.Tag}} | {{.Size}} |" \
-            | grep -E "gocloak-mcp:bench|sshaaf/keycloak-mcp-server" >> "$GITHUB_STEP_SUMMARY" || true
+          {
+            echo "### Container Image Sizes"
+            echo "| Image | Size |"
+            echo "| --- | ---: |"
+            docker images --format "| {{.Repository}}:{{.Tag}} | {{.Size}} |" \
+              | grep -E "gocloak-mcp:bench|sshaaf/keycloak-mcp-server" || true
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Run head-to-head benchmarks
         run: |
