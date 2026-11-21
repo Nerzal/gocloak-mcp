@@ -4,6 +4,7 @@ ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 
 WORKDIR /src
+RUN apk add --no-cache git
 COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 COPY cmd ./cmd

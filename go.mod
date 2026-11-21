@@ -3,7 +3,7 @@ module github.com/Nerzal/gocloak-mcp
 go 1.27.4
 
 require (
-	github.com/Nerzal/gocloak/v15 v15.0.0
+	github.com/Nerzal/gocloak/v15 v15.1.0
 	github.com/google/jsonschema-go v0.4.3
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	golang.org/x/sync v0.25.0
