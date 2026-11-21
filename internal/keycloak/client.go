@@ -4,7 +4,7 @@ package keycloak
 import (
 	"context"
 
-	"github.com/Nerzal/gocloak/v14"
+	"github.com/Nerzal/gocloak/v15"
 )
 
 // Client is the read-only subset of GoCloak used by the MCP server.

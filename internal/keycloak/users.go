@@ -4,7 +4,7 @@ import (
 	"context"
 	"maps"
 
-	"github.com/Nerzal/gocloak/v14"
+	"github.com/Nerzal/gocloak/v15"
 )
 
 func (s *service) ListUsers(ctx context.Context, realm string, first, pageSize int, filter UserFilter) ([]User, error) {
@@ -228,11 +228,11 @@ func mapUserSessions(sessions []*gocloak.UserSessionRepresentation) []UserSessio
 			clients = maps.Clone(session.Clients)
 		}
 		result = append(result, UserSession{
-			ID:         derefString(session.ID),
-			UserID:     derefString(session.UserID),
-			Username:   derefString(session.Username),
-			Start:      derefInt64(session.Start),
-			LastAccess: derefInt64(session.LastAccess),
+			ID:         sanitizeOutputString(session.ID),
+			UserID:     sanitizeOutputString(session.UserID),
+			Username:   sanitizeOutputString(session.Username),
+			Start:      session.Start,
+			LastAccess: session.LastAccess,
 			Clients:    clients,
 		})
 	}

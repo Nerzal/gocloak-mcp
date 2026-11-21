@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Nerzal/gocloak/v14"
+	"github.com/Nerzal/gocloak/v15"
 )
 
 func BenchmarkTokenProviderCachedHit(b *testing.B) {
@@ -88,6 +88,6 @@ func BenchmarkSanitizeOutputStringClean(b *testing.B) {
 	const text = "Standard Keycloak client description without unsafe characters"
 	b.ReportAllocs()
 	for b.Loop() {
-		_ = sanitizeOutputString(text, maxOutputFieldLen)
+		_ = sanitizeOutputString(text)
 	}
 }

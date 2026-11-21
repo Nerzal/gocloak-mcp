@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Nerzal/gocloak/v14"
+	"github.com/Nerzal/gocloak/v15"
 )
 
 func TestOWASP_MCP01_SecretExposureBlockedInDTOs(t *testing.T) {
@@ -20,7 +20,7 @@ func TestOWASP_MCP01_SecretExposureBlockedInDTOs(t *testing.T) {
 	svc := NewService(&stubClient{
 		clients:     []*gocloak.Client{{ID: strP("c1"), ClientID: strP("web"), Secret: strP(clientMarker)}},
 		idps:        []*gocloak.IdentityProviderRepresentation{{Alias: strP("okta"), Config: map[string]string{"clientSecret": idpMarker}}},
-		adminEvents: []*gocloak.AdminEventRepresentation{{OperationType: strP("CREATE"), Representation: strP(adminMarker)}},
+		adminEvents: []*gocloak.AdminEventRepresentation{{OperationType: "CREATE", Representation: adminMarker}},
 	}, &stubTokenProvider{}, "prod", []string{"prod"})
 
 	clients, err := svc.ListClients(ctx, "prod", 0, 10, ClientFilter{})
@@ -81,7 +81,7 @@ func TestOWASP_MCP05_PathTraversalAndInjectionRejected(t *testing.T) {
 
 func TestOWASP_MCP06_OutputSanitizationNeutralizesControlAndBiDiRunes(t *testing.T) {
 	dirty := "Alice\x1b[31m\x00\u202eEvil" + strings.Repeat("x", 600)
-	clean := sanitizeOutputString(dirty, maxOutputFieldLen)
+	clean := sanitizeOutputString(dirty)
 	if strings.ContainsAny(clean, "\x1b\x00\u202e") {
 		t.Fatalf("sanitizeOutputString left unsafe runes: %q", clean)
 	}

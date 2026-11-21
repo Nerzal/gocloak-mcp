@@ -3,7 +3,7 @@ package keycloak
 import (
 	"context"
 
-	"github.com/Nerzal/gocloak/v14"
+	"github.com/Nerzal/gocloak/v15"
 )
 
 func (s *service) ListRealmRoles(ctx context.Context, realm string, first, pageSize int, search string) ([]RoleInfo, error) {
@@ -173,9 +173,7 @@ func mapRoleMappings(mappings *gocloak.MappingsRepresentation) RoleMappings {
 	}
 	result.ClientRoles = make(map[string][]RoleInfo, len(mappings.ClientMappings))
 	for clientName, mapping := range mappings.ClientMappings {
-		if mapping != nil {
-			result.ClientRoles[clientName] = mapRoleValues(mapping.Mappings)
-		}
+		result.ClientRoles[clientName] = mapRoleValues(mapping.Mappings)
 	}
 	return result
 }

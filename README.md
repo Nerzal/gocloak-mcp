@@ -1,7 +1,7 @@
 # gocloak-mcp
 
 A security-first, read-only Keycloak MCP server built in Go with the official
-MCP Go SDK and GoCloak v14. Supports **Stdio** (default) and **Streamable HTTP**
+MCP Go SDK and GoCloak v15. Supports **Stdio** (default) and **Streamable HTTP**
 transports, multi-realm allowlisting, and full read-only parity across Users,
 Clients, Client Scopes, Roles, Groups, Realms, Events, Authentication Flows,
 Required Actions, Identity Providers, and Keycloak 26+ Organizations.

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Nerzal/gocloak/v14"
+	"github.com/Nerzal/gocloak/v15"
 )
 
 type stubClient struct {
@@ -253,9 +253,9 @@ func TestUsersOperationsAndBriefRepresentation(t *testing.T) {
 		users:     []*gocloak.User{nil, u},
 		user:      u,
 		userCount: 42,
-		sessions:  []*gocloak.UserSessionRepresentation{nil, {ID: strP("s1"), Username: strP("alice"), Clients: map[string]string{"c1": "app"}}},
+		sessions:  []*gocloak.UserSessionRepresentation{nil, {ID: "s1", Username: "alice", Clients: map[string]string{"c1": "app"}}},
 		groups:    []*gocloak.Group{nil, {ID: strP("g1"), Name: strP("devs"), Path: strP("/devs")}},
-		mappings:  &gocloak.MappingsRepresentation{RealmMappings: []gocloak.Role{{ID: strP("r1"), Name: strP("admin")}}, ClientMappings: map[string]*gocloak.ClientMappingsRepresentation{"app": {Mappings: []gocloak.Role{{ID: strP("r2"), Name: strP("reader")}}}}},
+		mappings:  &gocloak.MappingsRepresentation{RealmMappings: []gocloak.Role{{ID: strP("r1"), Name: strP("admin")}}, ClientMappings: map[string]gocloak.ClientMappingsRepresentation{"app": {Mappings: []gocloak.Role{{ID: strP("r2"), Name: strP("reader")}}}}},
 	}
 	svc := NewService(client, &stubTokenProvider{}, "primary", []string{"primary", "secondary"})
 
@@ -294,7 +294,6 @@ func newDomainFixtureService() Service {
 	scope := &gocloak.ClientScope{ID: strP("sc1"), Name: strP("email"), Protocol: strP("openid-connect")}
 	grp := &gocloak.Group{ID: strP("g1"), Name: strP("ops"), Path: strP("/ops")}
 	usr := &gocloak.User{ID: strP("u1"), Username: strP("svc-web"), Enabled: boolP(true)}
-	mt := gocloak.MembershipTypeManaged
 	return NewService(&stubClient{
 		clients: []*gocloak.Client{nil, cl}, client: cl, user: usr, users: []*gocloak.User{usr},
 		roles: []*gocloak.Role{nil, role}, role: role, scopes: []*gocloak.ClientScope{nil, scope}, scope: scope,
@@ -305,15 +304,15 @@ func newDomainFixtureService() Service {
 			{ID: strP("2"), Realm: strP("forbidden-realm"), Enabled: boolP(true)},
 		},
 		realm:       &gocloak.RealmRepresentation{ID: strP("1"), Realm: strP("primary"), Enabled: boolP(true)},
-		events:      []*gocloak.EventRepresentation{nil, {Time: 100, Type: strP("LOGIN"), ClientID: strP("web")}},
-		adminEvents: []*gocloak.AdminEventRepresentation{nil, {Time: 200, OperationType: strP("CREATE"), ResourceType: strP("USER"), AuthDetails: &gocloak.AdminEventAuthDetailsRepresentation{ClientID: strP("admin-cli")}, Representation: strP("secret-payload")}},
+		events:      []*gocloak.EventRepresentation{nil, {Time: 100, Type: "LOGIN", ClientID: "web"}},
+		adminEvents: []*gocloak.AdminEventRepresentation{nil, {Time: 200, OperationType: "CREATE", ResourceType: "USER", AuthDetails: gocloak.AdminEventAuthDetailsRepresentation{ClientID: "admin-cli"}, Representation: "secret-payload"}},
 		flows:       []*gocloak.AuthenticationFlowRepresentation{nil, {ID: strP("f1"), Alias: strP("browser"), TopLevel: boolP(true)}},
 		executions:  []*gocloak.ModifyAuthenticationExecutionRepresentation{nil, {ID: strP("e1"), DisplayName: strP("Cookie"), Requirement: strP("ALTERNATIVE")}},
 		actions:     []*gocloak.RequiredActionProviderRepresentation{nil, {Alias: strP("UPDATE_PASSWORD"), Enabled: boolP(true)}},
 		idps:        []*gocloak.IdentityProviderRepresentation{nil, {Alias: strP("google"), ProviderID: strP("oidc"), Enabled: boolP(true), Config: map[string]string{"clientSecret": "top-secret"}}},
 		idp:         &gocloak.IdentityProviderRepresentation{Alias: strP("google"), ProviderID: strP("oidc"), Enabled: boolP(true)},
 		orgs:        []*gocloak.OrganizationRepresentation{nil, {ID: strP("o1"), Name: strP("Acme"), Domains: []gocloak.OrganizationDomainRepresentation{{Name: strP("acme.test")}}}},
-		orgMembers:  []*gocloak.MemberRepresentation{nil, {User: gocloak.User{ID: strP("u1"), Username: strP("alice")}, MembershipType: &mt}},
+		orgMembers:  []*gocloak.MemberRepresentation{nil, {User: gocloak.User{ID: strP("u1"), Username: strP("alice")}, MembershipType: gocloak.MembershipTypeManaged}},
 	}, &stubTokenProvider{}, "primary", []string{"primary"})
 }
 
