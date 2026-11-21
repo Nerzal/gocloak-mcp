@@ -139,4 +139,41 @@ func TestOWASP_MCP06_OutputSanitizationNeutralizesControlAndBiDiRunes(t *testing
 	if len([]rune(clean)) != maxOutputFieldLen {
 		t.Fatalf("len(runes) = %d, want %d", len([]rune(clean)), maxOutputFieldLen)
 	}
+	sessions := mapUserSessions([]*gocloak.UserSessionRepresentation{{
+		ID: "s1", Clients: map[string]string{"c\x1b1": "web\u202eapp"},
+	}})
+	if got := sessions[0].Clients["c1"]; got != "webapp" {
+		t.Fatalf("mapUserSessions did not sanitize Clients map: %+v", sessions[0].Clients)
+	}
+}
+
+func TestOWASP_MCP01_ConfigMapRedactsTokensAndValuesPreservesClaims(t *testing.T) {
+	cfg := sanitizeConfigMap(map[string]string{
+		"access.token.claim": "true",
+		"auth_token":         "redacted-fixture-13",
+		"header":             "Bearer redacted-fixture-14",
+		"raw_jwt":            "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxIn0.sig",
+	})
+	if cfg["access.token.claim"] != "true" || len(cfg) != 1 {
+		t.Fatalf("sanitizeConfigMap = %+v, want only access.token.claim", cfg)
+	}
+}
+
+func TestClientRoleQueriesRejectEmptyClientUUID(t *testing.T) {
+	ctx := context.Background()
+	svc := NewService(&stubClient{}, &stubTokenProvider{}, "prod", []string{"prod"})
+	_, err1 := svc.GetUserCompositeClientRoles(ctx, "prod", "u1", "")
+	_, err2 := svc.GetUserAvailableClientRoles(ctx, "prod", "u1", "")
+	_, err3 := svc.GetGroupCompositeClientRoles(ctx, "prod", "g1", "")
+	_, err4 := svc.GetGroupAvailableClientRoles(ctx, "prod", "g1", "")
+	for name, err := range map[string]error{
+		"GetUserCompositeClientRoles":  err1,
+		"GetUserAvailableClientRoles":  err2,
+		"GetGroupCompositeClientRoles": err3,
+		"GetGroupAvailableClientRoles": err4,
+	} {
+		if !errors.Is(err, errInvalidID) {
+			t.Errorf("%s empty clientUUID error = %v, want errInvalidID", name, err)
+		}
+	}
 }

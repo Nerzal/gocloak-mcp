@@ -356,8 +356,13 @@ func sanitizeStringSlice(values []string) []string {
 
 func isSensitiveConfigKey(key string) bool {
 	lower := strings.ToLower(key)
+	switch lower {
+	case "id.token.claim", "access.token.claim", "userinfo.token.claim", "introspection.token.claim":
+		return false
+	}
 	for _, marker := range [...]string{
 		"secret", "password", "credential", "private", "script",
+		"token", "jwt", "pem", "pkcs", "client_assertion",
 		"apikey", "api_key", "api-key", "passphrase", "signingkey",
 		"signing_key", "encryptionkey", "encryption_key", "bearer",
 	} {
@@ -368,13 +373,21 @@ func isSensitiveConfigKey(key string) bool {
 	return false
 }
 
+func isSensitiveConfigValue(val string) bool {
+	trimmed := strings.TrimSpace(val)
+	if len(trimmed) >= 7 && strings.EqualFold(trimmed[:7], "bearer ") {
+		return true
+	}
+	return strings.HasPrefix(trimmed, "eyJ") && strings.Count(trimmed, ".") == 2
+}
+
 func sanitizeConfigMap(cfg map[string]string) map[string]string {
 	if len(cfg) == 0 {
 		return nil
 	}
 	result := make(map[string]string, len(cfg))
 	for k, v := range cfg {
-		if isSensitiveConfigKey(k) {
+		if isSensitiveConfigKey(k) || isSensitiveConfigValue(v) {
 			continue
 		}
 		result[sanitizeOutputString(k)] = sanitizeOutputString(v)

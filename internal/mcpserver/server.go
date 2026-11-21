@@ -6,6 +6,8 @@ import (
 	jsonv2 "encoding/json/v2"
 	"errors"
 	"log/slog"
+	"reflect"
+	"sync"
 	"time"
 
 	"github.com/google/jsonschema-go/jsonschema"
@@ -110,17 +112,33 @@ func executeTool[T any](
 	}, nil, nil
 }
 
+var inputSchemaCache sync.Map
+
+func cachedInputSchema[In any](toolName string) *jsonschema.Schema {
+	key := reflect.TypeFor[In]()
+	if cached, ok := inputSchemaCache.Load(key); ok {
+		if schema, valid := cached.(*jsonschema.Schema); valid {
+			return schema
+		}
+	}
+	schema, err := jsonschema.For[In](nil)
+	if err != nil {
+		panic("invalid input schema for tool " + toolName + ": " + err.Error())
+	}
+	actual, _ := inputSchemaCache.LoadOrStore(key, schema)
+	if stored, ok := actual.(*jsonschema.Schema); ok {
+		return stored
+	}
+	return schema
+}
+
 func addFastTool[In any](
 	server *mcp.Server,
 	tool *mcp.Tool,
 	handler func(context.Context, *mcp.CallToolRequest, In) (*mcp.CallToolResult, any, error),
 ) {
 	if tool.InputSchema == nil {
-		schema, err := jsonschema.For[In](nil)
-		if err != nil {
-			panic("invalid input schema for tool " + tool.Name + ": " + err.Error())
-		}
-		tool.InputSchema = schema
+		tool.InputSchema = cachedInputSchema[In](tool.Name)
 	}
 	server.AddTool(tool, wrapFastHandler(handler))
 }

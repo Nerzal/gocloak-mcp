@@ -169,25 +169,25 @@ func (s *service) GetGroupRoles(ctx context.Context, realm, groupID string) (Rol
 }
 
 func (s *service) GetGroupCompositeRealmRoles(ctx context.Context, realm, groupID string) ([]RoleInfo, error) {
-	return s.fetchGroupRoleList(ctx, realm, groupID, "", func(token, targetRealm string) ([]*gocloak.Role, error) {
+	return s.fetchGroupRoleList(ctx, realm, groupID, "", false, func(token, targetRealm string) ([]*gocloak.Role, error) {
 		return s.client.GetCompositeRealmRolesByGroupID(ctx, token, targetRealm, groupID)
 	})
 }
 
 func (s *service) GetGroupCompositeClientRoles(ctx context.Context, realm, groupID, clientUUID string) ([]RoleInfo, error) {
-	return s.fetchGroupRoleList(ctx, realm, groupID, clientUUID, func(token, targetRealm string) ([]*gocloak.Role, error) {
+	return s.fetchGroupRoleList(ctx, realm, groupID, clientUUID, true, func(token, targetRealm string) ([]*gocloak.Role, error) {
 		return s.client.GetCompositeClientRolesByGroupID(ctx, token, targetRealm, clientUUID, groupID)
 	})
 }
 
 func (s *service) GetGroupAvailableRealmRoles(ctx context.Context, realm, groupID string) ([]RoleInfo, error) {
-	return s.fetchGroupRoleList(ctx, realm, groupID, "", func(token, targetRealm string) ([]*gocloak.Role, error) {
+	return s.fetchGroupRoleList(ctx, realm, groupID, "", false, func(token, targetRealm string) ([]*gocloak.Role, error) {
 		return s.client.GetAvailableRealmRolesByGroupID(ctx, token, targetRealm, groupID)
 	})
 }
 
 func (s *service) GetGroupAvailableClientRoles(ctx context.Context, realm, groupID, clientUUID string) ([]RoleInfo, error) {
-	return s.fetchGroupRoleList(ctx, realm, groupID, clientUUID, func(token, targetRealm string) ([]*gocloak.Role, error) {
+	return s.fetchGroupRoleList(ctx, realm, groupID, clientUUID, true, func(token, targetRealm string) ([]*gocloak.Role, error) {
 		return s.client.GetAvailableClientRolesByGroupID(ctx, token, targetRealm, clientUUID, groupID)
 	})
 }
@@ -195,6 +195,7 @@ func (s *service) GetGroupAvailableClientRoles(ctx context.Context, realm, group
 func (s *service) fetchGroupRoleList(
 	ctx context.Context,
 	realm, groupID, clientUUID string,
+	requireClient bool,
 	fetch func(token, targetRealm string) ([]*gocloak.Role, error),
 ) ([]RoleInfo, error) {
 	targetRealm, err := s.resolveRealm(realm)
@@ -204,7 +205,7 @@ func (s *service) fetchGroupRoleList(
 	if valErr := validateIdentifier(groupID); valErr != nil {
 		return nil, valErr
 	}
-	if clientUUID != "" {
+	if requireClient {
 		if valErr := validateIdentifier(clientUUID); valErr != nil {
 			return nil, valErr
 		}

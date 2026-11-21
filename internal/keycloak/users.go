@@ -2,7 +2,6 @@ package keycloak
 
 import (
 	"context"
-	"maps"
 
 	"github.com/Nerzal/gocloak/v15"
 )
@@ -207,25 +206,25 @@ func (s *service) GetUserBruteForceStatus(ctx context.Context, realm, userID str
 }
 
 func (s *service) GetUserCompositeRealmRoles(ctx context.Context, realm, userID string) ([]RoleInfo, error) {
-	return s.fetchUserRoleList(ctx, realm, userID, "", func(token, targetRealm string) ([]*gocloak.Role, error) {
+	return s.fetchUserRoleList(ctx, realm, userID, "", false, func(token, targetRealm string) ([]*gocloak.Role, error) {
 		return s.client.GetCompositeRealmRolesByUserID(ctx, token, targetRealm, userID)
 	})
 }
 
 func (s *service) GetUserCompositeClientRoles(ctx context.Context, realm, userID, clientUUID string) ([]RoleInfo, error) {
-	return s.fetchUserRoleList(ctx, realm, userID, clientUUID, func(token, targetRealm string) ([]*gocloak.Role, error) {
+	return s.fetchUserRoleList(ctx, realm, userID, clientUUID, true, func(token, targetRealm string) ([]*gocloak.Role, error) {
 		return s.client.GetCompositeClientRolesByUserID(ctx, token, targetRealm, clientUUID, userID)
 	})
 }
 
 func (s *service) GetUserAvailableRealmRoles(ctx context.Context, realm, userID string) ([]RoleInfo, error) {
-	return s.fetchUserRoleList(ctx, realm, userID, "", func(token, targetRealm string) ([]*gocloak.Role, error) {
+	return s.fetchUserRoleList(ctx, realm, userID, "", false, func(token, targetRealm string) ([]*gocloak.Role, error) {
 		return s.client.GetAvailableRealmRolesByUserID(ctx, token, targetRealm, userID)
 	})
 }
 
 func (s *service) GetUserAvailableClientRoles(ctx context.Context, realm, userID, clientUUID string) ([]RoleInfo, error) {
-	return s.fetchUserRoleList(ctx, realm, userID, clientUUID, func(token, targetRealm string) ([]*gocloak.Role, error) {
+	return s.fetchUserRoleList(ctx, realm, userID, clientUUID, true, func(token, targetRealm string) ([]*gocloak.Role, error) {
 		return s.client.GetAvailableClientRolesByUserID(ctx, token, targetRealm, clientUUID, userID)
 	})
 }
@@ -233,6 +232,7 @@ func (s *service) GetUserAvailableClientRoles(ctx context.Context, realm, userID
 func (s *service) fetchUserRoleList(
 	ctx context.Context,
 	realm, userID, clientUUID string,
+	requireClient bool,
 	fetch func(token, targetRealm string) ([]*gocloak.Role, error),
 ) ([]RoleInfo, error) {
 	targetRealm, err := s.resolveRealm(realm)
@@ -242,7 +242,7 @@ func (s *service) fetchUserRoleList(
 	if valErr := validateIdentifier(userID); valErr != nil {
 		return nil, valErr
 	}
-	if clientUUID != "" {
+	if requireClient {
 		if valErr := validateIdentifier(clientUUID); valErr != nil {
 			return nil, valErr
 		}
@@ -374,7 +374,10 @@ func mapUserSessions(sessions []*gocloak.UserSessionRepresentation) []UserSessio
 		}
 		var clients map[string]string
 		if len(session.Clients) > 0 {
-			clients = maps.Clone(session.Clients)
+			clients = make(map[string]string, len(session.Clients))
+			for k, v := range session.Clients {
+				clients[sanitizeOutputString(k)] = sanitizeOutputString(v)
+			}
 		}
 		result = append(result, UserSession{
 			ID:         sanitizeOutputString(session.ID),
