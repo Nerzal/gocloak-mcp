@@ -92,70 +92,70 @@ def build_overview_svg() -> str:
     bot_y = top_y + ph + gap
 
     stdio_rps = [
-        ("gocloak-mcp (Go)", 1227.2, ACCENT, True),
-        ("MnemoShare (Go)", 1161.3, COMP_GO, False),
-        ("Haitham (TS/Node)", 480.3, COMP_TS, False),
-        ("idoyudha (Python)", 145.0, COMP_PY, False),
+        ("gocloak-mcp (Go, 98)", 1596.8, ACCENT, True),
+        ("MnemoShare (Go)", 1619.9, COMP_GO, False),
+        ("Haitham (TS/Node)", 575.2, COMP_TS, False),
+        ("idoyudha (Python)", 203.7, COMP_PY, False),
     ]
     http_rps = [
-        ("gocloak-mcp (Go)", 1139.9, ACCENT, True),
-        ("MnemoShare (Go)", 1120.1, COMP_GO, False),
-        ("sshaaf Quarkus Native", 204.9, COMP_JAVA, False),
-        ("sshaaf Quarkus JVM", 158.1, COMP_JVM, False),
+        ("gocloak-mcp (Go, 98)", 1519.5, ACCENT, True),
+        ("MnemoShare (Go)", 1568.5, COMP_GO, False),
+        ("sshaaf Quarkus Native", 216.2, COMP_JAVA, False),
+        ("sshaaf Quarkus JVM", 221.0, COMP_JVM, False),
     ]
     cold_start = [
-        ("gocloak-mcp (Stdio)", 9.9, ACCENT, True),
-        ("MnemoShare (Stdio)", 20.0, COMP_GO, False),
-        ("sshaaf Quarkus Native", 63.5, COMP_JAVA, False),
-        ("Haitham (TS/Node)", 114.1, COMP_TS, False),
-        ("idoyudha (Python)", 591.4, COMP_PY, False),
-        ("sshaaf Quarkus JVM", 2024.1, COMP_JVM, False),
+        ("gocloak-mcp (Stdio)", 11.9, ACCENT, True),
+        ("MnemoShare (Stdio)", 15.4, COMP_GO, False),
+        ("sshaaf Quarkus Native", 43.3, COMP_JAVA, False),
+        ("Haitham (TS/Node)", 84.1, COMP_TS, False),
+        ("idoyudha (Python)", 456.4, COMP_PY, False),
+        ("sshaaf Quarkus JVM", 1535.2, COMP_JVM, False),
     ]
     rss_load = [
-        ("gocloak-mcp (Stdio)", 16.2, ACCENT, True),
-        ("gocloak-mcp (HTTP)", 17.4, ACCENT_2, True),
-        ("MnemoShare (HTTP)", 18.5, COMP_GO, False),
+        ("gocloak-mcp (Stdio)", 17.1, ACCENT, True),
+        ("gocloak-mcp (HTTP)", 18.4, ACCENT_2, True),
+        ("MnemoShare (HTTP)", 18.6, COMP_GO, False),
         ("idoyudha (Python)", 64.1, COMP_PY, False),
-        ("Haitham (TS/Node)", 97.6, COMP_TS, False),
-        ("sshaaf Native / JVM", 310.8, COMP_JVM, False),
+        ("Haitham (TS/Node)", 88.5, COMP_TS, False),
+        ("sshaaf Native / JVM", 315.7, COMP_JVM, False),
     ]
 
     p1 = render_bar_panel(
         left_x, top_y, pw, ph,
         "Stdio Throughput (req/s)",
         "Higher is better · 50 users/call · 100 sequential calls",
-        stdio_rps, " req/s", max_val=1300,
+        stdio_rps, " req/s", max_val=1700,
     )
     p2 = render_bar_panel(
         right_x, top_y, pw, ph,
         "Streamable HTTP Throughput (req/s)",
         "Higher is better · 50 users/call · 300 calls @ 10 workers",
-        http_rps, " req/s", max_val=1300,
+        http_rps, " req/s", max_val=1700,
     )
     p3 = render_bar_panel(
         left_x, bot_y, pw, ph,
         "Cold Start Time (ms)",
         "Lower is better · median to first MCP initialize response",
-        cold_start, " ms", max_val=2100,
+        cold_start, " ms", max_val=1650,
     )
     p4 = render_bar_panel(
         right_x, bot_y, pw, ph,
         "Memory Footprint Under Load (MB RSS)",
-        "Lower is better · sshaaf Native: 151.4 MB, JVM: 310.8 MB",
-        rss_load, " MB", max_val=330,
+        "Lower is better · sshaaf Native: 153.4 MB, JVM: 315.7 MB",
+        rss_load, " MB", max_val=340,
     )
 
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" role="img" aria-label="gocloak-mcp v0.3.0 Head-to-Head Benchmarks">
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" role="img" aria-label="gocloak-mcp 98-Tool Head-to-Head Benchmarks">
   <defs>
     <style>
       text {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }}
     </style>
   </defs>
   <rect width="{w}" height="{h}" rx="16" fill="{BG}" stroke="{BORDER}" stroke-width="1"/>
-  <text x="24" y="36" fill="{TEXT}" font-size="20" font-weight="800">gocloak-mcp v0.3.0 — Head-to-Head Keycloak MCP Benchmarks</text>
+  <text x="24" y="36" fill="{TEXT}" font-size="20" font-weight="800">gocloak-mcp (98 Read-Only Tools) — Head-to-Head Keycloak MCP Benchmarks</text>
   <text x="24" y="57" fill="{MUTED}" font-size="12.5">Measured on ubuntu-latest (4 vCPU x86_64) · Identical local mock Keycloak Admin API (50 users/call) · Go 1.27.4 + gocloak v15.1.0</text>
-  <rect x="{w - 230}" y="20" width="206" height="30" rx="15" fill="#0d2b24" stroke="{ACCENT}" stroke-width="1"/>
-  <text x="{w - 127}" y="39" text-anchor="middle" fill="{ACCENT}" font-size="12" font-weight="700">#1 Stdio &amp; Streamable HTTP</text>
+  <rect x="{w - 250}" y="20" width="226" height="30" rx="15" fill="#0d2b24" stroke="{ACCENT}" stroke-width="1"/>
+  <text x="{w - 137}" y="39" text-anchor="middle" fill="{ACCENT}" font-size="12" font-weight="700">98 Read Tools · Fastest Cold Start &amp; RSS</text>
   {p1}
   {p2}
   {p3}

@@ -3,7 +3,7 @@
 [![CI](https://github.com/Nerzal/gocloak-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Nerzal/gocloak-mcp/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/Nerzal/gocloak-mcp)](https://github.com/Nerzal/gocloak-mcp/releases/latest)
 [![Go](https://img.shields.io/badge/Go-1.27.4%2B-00ADD8?logo=go&logoColor=white)](https://go.dev/)
-[![GHCR](https://img.shields.io/badge/GHCR-21.1%20MB%20distroless-2496ED?logo=docker&logoColor=white)](https://github.com/Nerzal/gocloak-mcp/pkgs/container/gocloak-mcp)
+[![GHCR](https://img.shields.io/badge/GHCR-22.0%20MB%20distroless-2496ED?logo=docker&logoColor=white)](https://github.com/Nerzal/gocloak-mcp/pkgs/container/gocloak-mcp)
 [![License](https://img.shields.io/github/license/Nerzal/gocloak-mcp)](LICENSE)
 
 A security-first, read-only Keycloak MCP server built in Go with the official
@@ -16,20 +16,20 @@ Keycloak 26+ Organizations, Components / User Federation (LDAP/Kerberos), and Fi
 In Stdio mode, standard output is strictly reserved for JSON-RPC frames and all
 structured JSON logs are written to standard error with automatic redaction.
 
-## Performance Benchmarks (`v0.3.0`)
+## Performance Benchmarks (98 Read-Only Tools)
 
-![gocloak-mcp v0.3.0 Head-to-Head Benchmarks](docs/assets/benchmark-overview.svg)
+![gocloak-mcp Head-to-Head Benchmarks](docs/assets/benchmark-overview.svg)
 
 Measured head-to-head on `ubuntu-latest` (4 vCPU `x86_64`) against an identical local mock Keycloak Admin API (50 users/call). See [Security & Benchmarks](docs/SECURITY_AND_BENCHMARKS.md) for the full OWASP MCP Top 10 control matrix, `pprof` optimization progression, and reproducible harness ([`benchmarks/run_benchmarks.py`](benchmarks/run_benchmarks.py)):
 
 | Server | Transport | Binary / Image | Cold Start | RSS (Load) | Throughput |
 | --- | --- | ---: | ---: | ---: | ---: |
-| **`gocloak-mcp` (`v0.3.0`, Go 1.27 + `gocloak v15.1`)** | **Stdio / HTTP** | **10.2 MB / 21.1 MB** | **9.9 ms / 22.7 ms** | **16.2 MB / 17.4 MB** | **1,227 / 1,140 req/s** |
-| `MnemoShare/mnemoshare-keycloak-mcp` (Go) | Stdio / HTTP | 10.4 MB | 20.0 ms / 21.7 ms | 17.4 MB / 18.5 MB | 1,161 / 1,120 req/s |
-| `HaithamOumerzoug/keycloak-mcp` (TS/Node 22) | Stdio | Node runtime | 114.1 ms | 97.6 MB | 480 req/s |
-| `idoyudha/mcp-keycloak` (Python 3.12 / FastMCP) | Stdio | Python venv | 591.4 ms | 64.1 MB | 145 req/s |
-| `sshaaf/keycloak-mcp-server` (Quarkus Native) | HTTP | 74.1 MB | 63.5 ms | 151.4 MB | 205 req/s |
-| `sshaaf/keycloak-mcp-server` (Quarkus JVM) | HTTP | 23.4 MB JAR / 626 MB | 2,024.1 ms | 310.8 MB | 158 req/s |
+| **`gocloak-mcp` (98 tools, Go 1.27 + `gocloak v15.1`)** | **Stdio / HTTP** | **10.9 MB / 22.0 MB** | **11.9 ms / 22.2 ms** | **17.1 MB / 18.4 MB** | **1,597 / 1,520 req/s** |
+| `MnemoShare/mnemoshare-keycloak-mcp` (Go) | Stdio / HTTP | 10.4 MB | 15.4 ms / 21.3 ms | 17.3 MB / 18.6 MB | 1,620 / 1,569 req/s |
+| `HaithamOumerzoug/keycloak-mcp` (TS/Node 22) | Stdio | Node runtime | 84.1 ms | 88.5 MB | 575 req/s |
+| `idoyudha/mcp-keycloak` (Python 3.12 / FastMCP) | Stdio | Python venv | 456.4 ms | 64.1 MB | 204 req/s |
+| `sshaaf/keycloak-mcp-server` (Quarkus Native) | HTTP | 74.1 MB | 43.3 ms | 153.4 MB | 216 req/s |
+| `sshaaf/keycloak-mcp-server` (Quarkus JVM) | HTTP | 23.4 MB JAR / 626 MB | 1,535.2 ms | 315.7 MB | 221 req/s |
 
 ## Requirements
 
