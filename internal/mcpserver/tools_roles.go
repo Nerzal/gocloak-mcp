@@ -42,7 +42,7 @@ func registerRoleTools(server *mcp.Server, deps toolDeps) {
 }
 
 func registerRealmRoleQueries(server *mcp.Server, deps toolDeps) {
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_realm_roles",
 		Description: "List realm-level roles in a Keycloak realm.",
 		Annotations: deps.annotations,
@@ -57,7 +57,7 @@ func registerRealmRoleQueries(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_realm_role",
 		Description: "Get a single realm role by name.",
 		Annotations: deps.annotations,
@@ -70,7 +70,7 @@ func registerRealmRoleQueries(server *mcp.Server, deps toolDeps) {
 }
 
 func registerRoleMemberQueries(server *mcp.Server, deps toolDeps) {
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_users_in_role",
 		Description: "List users assigned to a realm role.",
 		Annotations: deps.annotations,
@@ -85,7 +85,7 @@ func registerRoleMemberQueries(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_users_in_client_role",
 		Description: "List users assigned to a specific client role.",
 		Annotations: deps.annotations,

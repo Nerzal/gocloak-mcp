@@ -46,7 +46,7 @@ func registerRealmTools(server *mcp.Server, deps toolDeps) {
 }
 
 func registerRealmInfoTools(server *mcp.Server, deps toolDeps) {
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_realms",
 		Description: "List accessible Keycloak realms permitted by KEYCLOAK_ALLOWED_REALMS.",
 		Annotations: deps.annotations,
@@ -57,7 +57,7 @@ func registerRealmInfoTools(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_realm_info",
 		Description: "Get basic information about a configured Keycloak realm.",
 		Annotations: deps.annotations,
@@ -70,7 +70,7 @@ func registerRealmInfoTools(server *mcp.Server, deps toolDeps) {
 }
 
 func registerEventTools(server *mcp.Server, deps toolDeps) {
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_events",
 		Description: "List login/user events in a Keycloak realm.",
 		Annotations: deps.annotations,
@@ -88,7 +88,7 @@ func registerEventTools(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_admin_events",
 		Description: "List admin audit events in a Keycloak realm (without raw secret payloads).",
 		Annotations: deps.annotations,

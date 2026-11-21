@@ -62,7 +62,7 @@ func registerAuthIDPOrgTools(server *mcp.Server, deps toolDeps) {
 }
 
 func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_authentication_flows",
 		Description: "List authentication flows configured in a Keycloak realm.",
 		Annotations: deps.annotations,
@@ -73,7 +73,7 @@ func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_flow_executions",
 		Description: "List executions within a Keycloak authentication flow.",
 		Annotations: deps.annotations,
@@ -84,7 +84,7 @@ func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_required_actions",
 		Description: "List required actions configured in a Keycloak realm.",
 		Annotations: deps.annotations,
@@ -97,7 +97,7 @@ func registerAuthFlowTools(server *mcp.Server, deps toolDeps) {
 }
 
 func registerIdentityProviderTools(server *mcp.Server, deps toolDeps) {
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_identity_providers",
 		Description: "List identity providers in a Keycloak realm (without secret config).",
 		Annotations: deps.annotations,
@@ -108,7 +108,7 @@ func registerIdentityProviderTools(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_identity_provider",
 		Description: "Get safe metadata for a single identity provider by alias.",
 		Annotations: deps.annotations,
@@ -121,7 +121,7 @@ func registerIdentityProviderTools(server *mcp.Server, deps toolDeps) {
 }
 
 func registerOrganizationTools(server *mcp.Server, deps toolDeps) {
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_organizations",
 		Description: "List Keycloak 26+ organizations in a realm.",
 		Annotations: deps.annotations,
@@ -136,7 +136,7 @@ func registerOrganizationTools(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_organization_members",
 		Description: "List members of a Keycloak 26+ organization.",
 		Annotations: deps.annotations,

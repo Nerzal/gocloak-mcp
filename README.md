@@ -11,7 +11,7 @@ structured JSON logs are written to standard error with automatic redaction.
 
 ## Requirements
 
-- Go 1.26.11 or newer
+- Go 1.27.4 or newer
 - A Keycloak confidential client with service accounts enabled
 - A client secret supplied through the environment
 
