@@ -23,10 +23,20 @@ func redactAttribute(groups []string, attr slog.Attr) slog.Attr {
 	if len(groups) == 0 && isBuiltinKey(attr.Key) {
 		return attr
 	}
+	if len(groups) == 0 && isSafeAuditKey(attr.Key) {
+		if isSensitiveValue(attr.Value) {
+			return slog.String(attr.Key, "[REDACTED]")
+		}
+		return attr
+	}
 	if isSensitiveKey(attr.Key) || hasSensitiveGroup(groups) || isSensitiveValue(attr.Value) {
 		return slog.String(attr.Key, "[REDACTED]")
 	}
 	return attr
+}
+
+func isSafeAuditKey(key string) bool {
+	return key == "tool" || key == "outcome" || key == "duration_ms"
 }
 
 func isSensitiveValue(val slog.Value) bool {

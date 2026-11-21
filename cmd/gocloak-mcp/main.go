@@ -104,7 +104,9 @@ func newHTTPTransport(timeout time.Duration) *http.Transport {
 		ResponseHeaderTimeout: timeout,
 		IdleConnTimeout:       90 * time.Second,
 		MaxIdleConns:          100,
-		MaxIdleConnsPerHost:   10,
+		MaxIdleConnsPerHost:   100,
+		ReadBufferSize:        16 << 10,
+		WriteBufferSize:       16 << 10,
 	}
 }
 

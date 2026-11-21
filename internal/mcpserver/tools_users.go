@@ -50,7 +50,7 @@ func registerUserTools(server *mcp.Server, deps toolDeps) {
 }
 
 func registerListAndGetUsers(server *mcp.Server, deps toolDeps) {
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_users",
 		Description: "List or search users in a Keycloak realm.",
 		Annotations: deps.annotations,
@@ -66,7 +66,7 @@ func registerListAndGetUsers(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_user",
 		Description: "Get a single user by UUID in a Keycloak realm.",
 		Annotations: deps.annotations,
@@ -77,7 +77,7 @@ func registerListAndGetUsers(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "count_users",
 		Description: "Count users in a Keycloak realm with optional search filters.",
 		Annotations: deps.annotations,
@@ -91,7 +91,7 @@ func registerListAndGetUsers(server *mcp.Server, deps toolDeps) {
 }
 
 func registerUserRelations(server *mcp.Server, deps toolDeps) {
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_user_sessions",
 		Description: "List active sessions for a Keycloak user.",
 		Annotations: deps.annotations,
@@ -102,7 +102,7 @@ func registerUserRelations(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_user_groups",
 		Description: "List groups a Keycloak user belongs to.",
 		Annotations: deps.annotations,
@@ -117,7 +117,7 @@ func registerUserRelations(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_user_roles",
 		Description: "List realm and client role mappings assigned to a Keycloak user.",
 		Annotations: deps.annotations,

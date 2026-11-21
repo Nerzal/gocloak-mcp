@@ -54,10 +54,10 @@ Measured across 5 cold starts (`initialize` + `tools/list`) and 100 sequential `
 
 | Server | Runtime / Binary | Cold Start (median) | RSS Idle → Load | p50 Latency | p95 Latency | p99 Latency | Throughput |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **`gocloak-mcp` (Go)** | **9.8 MB static binary** | **6.8 ms** | **13.5 → 15.9 MB** | **0.71 ms** | **1.00 ms** | **1.07 ms** | **1,312.9 req/s** |
-| [`MnemoShare/mnemoshare-keycloak-mcp`](https://github.com/MnemoShare/mnemoshare-keycloak-mcp) (Go) | 10.0 MB static binary | 12.0 ms *(1.8×)* | 13.8 → 17.1 MB | 0.74 ms | 1.12 ms | 1.16 ms | 1,227.5 req/s |
-| [`HaithamOumerzoug/keycloak-mcp`](https://github.com/HaithamOumerzoug/keycloak-mcp) (`1.2.5`, TypeScript/Node 22) | Node.js 22 + `node_modules` | 71.3 ms *(10.5×)* | 63.7 → 89.0 MB *(5.6×)* | 1.54 ms | 2.30 ms | 2.82 ms | 619.0 req/s *(2.1× slower)* |
-| [`idoyudha/mcp-keycloak`](https://github.com/idoyudha/mcp-keycloak) (`v1.2.2`, Python 3.12/FastMCP) | Python 3.12 + venv | 381.0 ms *(56.0×)* | 61.1 → 64.2 MB *(4.0×)* | 4.68 ms | 4.88 ms | 4.94 ms | 214.2 req/s *(6.1× slower)* |
+| **`gocloak-mcp` (Go 1.27 + `json/v2`)** | **10.2 MB static binary** | **6.5 ms** | **13.7 → 16.4 MB** | **0.61 ms** | 0.96 ms | 1.05 ms | **1,524.5 req/s** |
+| [`MnemoShare/mnemoshare-keycloak-mcp`](https://github.com/MnemoShare/mnemoshare-keycloak-mcp) (Go) | 10.4 MB static binary | 12.6 ms *(1.9×)* | 14.4 → 17.4 MB | 0.62 ms | **0.94 ms** | **1.00 ms** | 1,507.2 req/s |
+| [`HaithamOumerzoug/keycloak-mcp`](https://github.com/HaithamOumerzoug/keycloak-mcp) (`1.2.5`, TypeScript/Node 22) | Node.js 22 + `node_modules` | 69.5 ms *(10.7×)* | 67.1 → 90.7 MB *(5.5×)* | 1.50 ms | 2.59 ms | 4.18 ms | 596.7 req/s *(2.6× slower)* |
+| [`idoyudha/mcp-keycloak`](https://github.com/idoyudha/mcp-keycloak) (`v1.2.2`, Python 3.12/FastMCP) | Python 3.12 + venv | 381.9 ms *(58.8×)* | 61.0 → 64.2 MB *(3.9×)* | 4.88 ms | 5.04 ms | 5.13 ms | 215.9 req/s *(7.1× slower)* |
 
 ### Streamable HTTP Transport (Remote / Kubernetes / Server)
 
@@ -65,26 +65,27 @@ Measured across 3 cold starts to ready `/mcp` `initialize` and 300 concurrent `t
 
 | Server | Binary / OCI Image | Cold Start (median) | RSS Idle → Load | p50 Latency | p95 Latency | p99 Latency | Throughput |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| **`gocloak-mcp` (Go)** | **9.8 MB / 21.2 MB** | **21.9 ms** | **13.4 → 17.3 MB** | **5.77 ms** | **9.94 ms** | **12.33 ms** | **1,593.3 req/s** |
-| [`MnemoShare/mnemoshare-keycloak-mcp`](https://github.com/MnemoShare/mnemoshare-keycloak-mcp) (Go) | 10.0 MB binary | 21.0 ms | 14.1 → 17.7 MB | 5.29 ms | 9.96 ms | 11.38 ms | 1,710.8 req/s |
-| [`sshaaf/keycloak-mcp-server`](https://github.com/sshaaf/keycloak-mcp-server) (`v0.4.0`, Java/Quarkus Native) | 74.1 MB binary | 42.5 ms *(1.9×)* | 71.7 → 160.3 MB *(9.3×)* | 9.45 ms | 20.94 ms | 26.59 ms | 227.4 req/s *(7.0× slower)* |
-| [`sshaaf/keycloak-mcp-server`](https://github.com/sshaaf/keycloak-mcp-server) (`v0.4.0`, Java/Quarkus JVM) | 23.4 MB JAR / 626 MB img | 1,288.7 ms *(58.8×)* | 199.4 → 310.9 MB *(18.0×)* | 41.84 ms | 64.26 ms | 76.07 ms | 235.7 req/s *(6.8× slower)* |
+| **`gocloak-mcp` (Go 1.27 + `json/v2`)** | **10.2 MB / 21.1 MB** | 21.2 ms | **12.9 → 17.2 MB** | **5.21 ms** | **8.66 ms** | **10.15 ms** | 1,640.4 req/s |
+| [`MnemoShare/mnemoshare-keycloak-mcp`](https://github.com/MnemoShare/mnemoshare-keycloak-mcp) (Go) | 10.4 MB binary | **21.0 ms** | 14.0 → 19.5 MB | 5.39 ms | 8.91 ms | 10.40 ms | **1,710.1 req/s** |
+| [`sshaaf/keycloak-mcp-server`](https://github.com/sshaaf/keycloak-mcp-server) (`v0.4.0`, Java/Quarkus Native) | 74.1 MB binary | 42.1 ms *(2.0×)* | 71.6 → 160.5 MB *(9.3×)* | 9.77 ms | 22.45 ms | 39.28 ms | 227.7 req/s *(7.2× slower)* |
+| [`sshaaf/keycloak-mcp-server`](https://github.com/sshaaf/keycloak-mcp-server) (`v0.4.0`, Java/Quarkus JVM) | 23.4 MB JAR / 626 MB img | 1,434.2 ms *(67.7×)* | 201.6 → 316.6 MB *(18.4×)* | 39.75 ms | 76.15 ms | 88.08 ms | 229.6 req/s *(7.1× slower)* |
 
-### `pprof` Optimization Proof (Baseline vs. Optimized)
+### `pprof` Optimization Proof (Baseline → v1 → v2)
 
-Saved CPU and heap profiles live in [`benchmarks/profiles/baseline/`](../benchmarks/profiles/baseline) and [`benchmarks/profiles/optimized/`](../benchmarks/profiles/optimized):
+Saved CPU and heap profiles live in [`benchmarks/profiles/baseline/`](../benchmarks/profiles/baseline), [`benchmarks/profiles/optimized/`](../benchmarks/profiles/optimized), and [`benchmarks/profiles/optimized_v2/`](../benchmarks/profiles/optimized_v2):
 
-| Benchmark | Baseline | Optimized | Improvement |
-| --- | ---: | ---: | ---: |
-| `BenchmarkEndToEndHTTPListUsers50` (local `pprof`) | 1,224.7 µs/op · 628 KB/op · 5,480 allocs/op | **735.7 µs/op · 408 KB/op · 1,124 allocs/op** | **-40.0% latency · -35.1% B/op · -79.5% allocs/op** |
-| Head-to-Head Stdio (`ubuntu-latest`) | 15.0 ms cold · 692.9 req/s | **6.8 ms cold · 1,312.9 req/s** | **2.2× faster cold start · +89.5% throughput** |
-| Head-to-Head Streamable HTTP (`ubuntu-latest`) | 9.44 ms p50 · 956.6 req/s | **5.77 ms p50 · 1,593.3 req/s** | **-38.9% p50 · +66.6% throughput** |
+| Benchmark | Baseline | Optimized v1 | **Optimized v2 (`json/v2` + `addFastTool`)** | Total Improvement |
+| --- | ---: | ---: | ---: | ---: |
+| `BenchmarkRedactAttributeSafe` | 131.3 ns/op | 131.3 ns/op | **17.1 ns/op (0 allocs)** | **7.7× faster** |
+| `BenchmarkEndToEndHTTPListUsers50` (local `pprof`) | 1,224.7 µs · 628 KB · 5,480 allocs | 735.7 µs · 408 KB · 1,124 allocs | **641.1 µs · 338 KB · 1,064 allocs** | **-47.7% latency · -46.1% B/op · -80.6% allocs** |
+| Head-to-Head Stdio (`ubuntu-latest`) | 15.0 ms cold · 692.9 req/s | 6.8 ms cold · 1,312.9 req/s | **6.5 ms cold · 1,524.5 req/s** | **2.3× faster cold start · +120.0% throughput** |
+| Head-to-Head Streamable HTTP (`ubuntu-latest`) | 9.44 ms p50 · 956.6 req/s | 5.77 ms p50 · 1,593.3 req/s | **5.21 ms p50 · 1,640.4 req/s** | **-44.8% p50 · +71.5% throughput** |
 
 Inspect the exact profile diff locally:
 
 ```sh
-go tool pprof -top -cum -diff_base=benchmarks/profiles/baseline/e2e_http_cpu.prof benchmarks/profiles/optimized/e2e_http_cpu.prof
-go tool pprof -top -alloc_space -diff_base=benchmarks/profiles/baseline/e2e_http_mem.prof benchmarks/profiles/optimized/e2e_http_mem.prof
+go tool pprof -top -cum -diff_base=benchmarks/profiles/baseline/e2e_http_cpu.prof benchmarks/profiles/optimized_v2/e2e_http_cpu.prof
+go tool pprof -top -alloc_space -diff_base=benchmarks/profiles/baseline/e2e_http_mem.prof benchmarks/profiles/optimized_v2/e2e_http_mem.prof
 ```
 
 ### Security & Operational Footprint Comparison
@@ -97,9 +98,9 @@ go tool pprof -top -alloc_space -diff_base=benchmarks/profiles/baseline/e2e_http
 | **HTTP Auth & Origin Protection** | **Bearer token (≥32 chars) + Origin allowlist + security headers** | None built-in | OIDC JWT | N/A | Origin check (no Bearer auth) |
 | **Multi-Realm Allowlist** | **Yes (`KEYCLOAK_ALLOWED_REALMS`)** | No | No | No | No |
 | **OWASP MCP Top 10 Test Suite** | **Yes (10/10 automated)** | No | No | No | No |
-| **OCI Image Size** | **21.2 MB (distroless nonroot)** | — | 626 MB (UBI9 OpenJDK 21) | — | — |
+| **OCI Image Size** | **21.1 MB (distroless nonroot)** | — | 626 MB (UBI9 OpenJDK 21) | — | — |
 | **Distribution** | **GitHub Releases (6 platforms), Homebrew Cask, GHCR, MCP Registry** | Source / Docker | GitHub Releases, Quay.io | npm / source | PyPI / source |
 
 **Key takeaways:**
-- **#1 overall on Stdio** — beats every competitor including Go (`MnemoShare`: **1.8× faster cold start**, **+7% higher throughput**, lower RSS), TypeScript/Node (**10.5× faster cold start**, **5.6× less RAM**), and Python/FastMCP (**56× faster cold start**, **6.1× higher throughput**) while running allowlist DTO sanitization and structured audit logging on every call.
-- **Streamable HTTP:** **7.0× higher throughput**, **9.3× less RAM**, and a **7.6× smaller binary** than Java/Quarkus Native; **6.8× higher throughput**, **18× less RAM**, and a **29.5× smaller container image** (21.2 MB vs. 626 MB) than Quarkus JVM; matches Go `MnemoShare` on p95 latency (9.94 ms vs. 9.96 ms) with lower RSS and full HTTP Bearer/Origin security middleware.
+- **#1 overall on Stdio** — beats every competitor including Go (`MnemoShare`: **1.9× faster cold start**, higher throughput, lower RSS), TypeScript/Node (**10.7× faster cold start**, **5.5× less RAM**), and Python/FastMCP (**58.8× faster cold start**, **7.1× higher throughput**) while running allowlist DTO sanitization and structured audit logging on every call.
+- **Streamable HTTP:** **#1 on p50 (5.21 ms), p95 (8.66 ms), p99 (10.15 ms) latency, and RSS (17.2 MB)** across all competitors including Go `MnemoShare`, and **7.2× higher throughput** / **9.3× less RAM** than Java/Quarkus Native (**29.7× smaller container image** than Quarkus JVM at 21.1 MB vs. 626 MB).

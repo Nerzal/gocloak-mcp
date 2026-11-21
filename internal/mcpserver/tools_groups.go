@@ -40,7 +40,7 @@ func registerGroupTools(server *mcp.Server, deps toolDeps) {
 }
 
 func registerGroupCoreTools(server *mcp.Server, deps toolDeps) {
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_groups",
 		Description: "List or search groups in a Keycloak realm.",
 		Annotations: deps.annotations,
@@ -55,7 +55,7 @@ func registerGroupCoreTools(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "count_groups",
 		Description: "Count groups in a Keycloak realm with optional search filter.",
 		Annotations: deps.annotations,
@@ -66,7 +66,7 @@ func registerGroupCoreTools(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_group",
 		Description: "Get a single group by UUID.",
 		Annotations: deps.annotations,
@@ -79,7 +79,7 @@ func registerGroupCoreTools(server *mcp.Server, deps toolDeps) {
 }
 
 func registerGroupRelationTools(server *mcp.Server, deps toolDeps) {
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_group_members",
 		Description: "List users belonging to a Keycloak group.",
 		Annotations: deps.annotations,
@@ -94,7 +94,7 @@ func registerGroupRelationTools(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_group_roles",
 		Description: "List realm and client role mappings assigned to a Keycloak group.",
 		Annotations: deps.annotations,

@@ -3,11 +3,12 @@ package mcpserver
 
 import (
 	"context"
-	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"errors"
 	"log/slog"
 	"time"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/Nerzal/gocloak-mcp/internal/keycloak"
@@ -91,7 +92,7 @@ func executeTool[T any](
 		auditToolCall(deps.logger, toolName, "error", durationMS)
 		return nil, nil, errors.New("keycloak request failed")
 	}
-	encoded, err := json.Marshal(result)
+	encoded, err := jsonv2.Marshal(result)
 	if err != nil {
 		auditToolCall(deps.logger, toolName, "error", durationMS)
 		return nil, nil, errors.New("keycloak response encoding failed")
@@ -100,6 +101,54 @@ func executeTool[T any](
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: string(encoded)}},
 	}, nil, nil
+}
+
+func addFastTool[In any](
+	server *mcp.Server,
+	tool *mcp.Tool,
+	handler func(context.Context, *mcp.CallToolRequest, In) (*mcp.CallToolResult, any, error),
+) {
+	if tool.InputSchema == nil {
+		schema, err := jsonschema.For[In](nil)
+		if err != nil {
+			panic("invalid input schema for tool " + tool.Name + ": " + err.Error())
+		}
+		tool.InputSchema = schema
+	}
+	server.AddTool(tool, wrapFastHandler(handler))
+}
+
+func wrapFastHandler[In any](
+	handler func(context.Context, *mcp.CallToolRequest, In) (*mcp.CallToolResult, any, error),
+) mcp.ToolHandler {
+	return func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		in, err := decodeToolArgs[In](req)
+		if err != nil {
+			return errorToolResult(err), nil
+		}
+		res, _, err := handler(ctx, req, in)
+		if err != nil {
+			return errorToolResult(err), nil
+		}
+		return res, nil
+	}
+}
+
+func decodeToolArgs[In any](req *mcp.CallToolRequest) (In, error) {
+	var in In
+	if req == nil || len(req.Params.Arguments) == 0 {
+		return in, nil
+	}
+	if err := jsonv2.Unmarshal(req.Params.Arguments, &in, jsonv2.RejectUnknownMembers(true)); err != nil {
+		return in, errors.New("invalid tool arguments")
+	}
+	return in, nil
+}
+
+func errorToolResult(err error) *mcp.CallToolResult {
+	var res mcp.CallToolResult
+	res.SetError(err)
+	return &res
 }
 
 func auditToolCall(logger *slog.Logger, tool, outcome string, durationMS int64) {

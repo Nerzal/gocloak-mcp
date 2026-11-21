@@ -45,7 +45,7 @@ func registerClientTools(server *mcp.Server, deps toolDeps) {
 }
 
 func registerClientCoreTools(server *mcp.Server, deps toolDeps) {
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_clients",
 		Description: "List clients in a Keycloak realm.",
 		Annotations: deps.annotations,
@@ -60,7 +60,7 @@ func registerClientCoreTools(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_client",
 		Description: "Get safe metadata for a single Keycloak client by UUID.",
 		Annotations: deps.annotations,
@@ -71,7 +71,7 @@ func registerClientCoreTools(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_client_service_account",
 		Description: "Get the service-account user associated with a Keycloak client.",
 		Annotations: deps.annotations,
@@ -84,7 +84,7 @@ func registerClientCoreTools(server *mcp.Server, deps toolDeps) {
 }
 
 func registerClientRoleAndScopeTools(server *mcp.Server, deps toolDeps) {
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_client_roles",
 		Description: "List roles defined on a Keycloak client.",
 		Annotations: deps.annotations,
@@ -99,7 +99,7 @@ func registerClientRoleAndScopeTools(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "list_client_scopes",
 		Description: "List client scopes configured in a Keycloak realm.",
 		Annotations: deps.annotations,
@@ -110,7 +110,7 @@ func registerClientRoleAndScopeTools(server *mcp.Server, deps toolDeps) {
 		})
 	})
 
-	mcp.AddTool(server, &mcp.Tool{
+	addFastTool(server, &mcp.Tool{
 		Name:        "get_client_scope",
 		Description: "Get a single client scope by UUID.",
 		Annotations: deps.annotations,

@@ -11,7 +11,7 @@ structured JSON logs are written to standard error with automatic redaction.
 
 ## Requirements
 
-- Go 1.26.11 or newer
+- Go 1.27.4 or newer
 - A Keycloak confidential client with service accounts enabled
 - A client secret supplied through the environment
 
@@ -37,12 +37,12 @@ See [Security & Benchmarks](docs/SECURITY_AND_BENCHMARKS.md) for the full OWASP 
 
 | Server | Transport | Binary / Image | Cold Start | RSS (Load) | Throughput |
 | --- | --- | ---: | ---: | ---: | ---: |
-| **`gocloak-mcp` (Go)** | **Stdio / HTTP** | **9.8 MB / 21.2 MB** | **6.8 ms / 21.9 ms** | **15.9 MB / 17.3 MB** | **1,313 / 1,593 req/s** |
-| `MnemoShare/mnemoshare-keycloak-mcp` (Go) | Stdio / HTTP | 10.0 MB | 12.0 ms / 21.0 ms | 17.1 MB / 17.7 MB | 1,228 / 1,711 req/s |
-| `HaithamOumerzoug/keycloak-mcp` (TS/Node) | Stdio | Node runtime | 71.3 ms | 89.0 MB | 619 req/s |
-| `idoyudha/mcp-keycloak` (Python/FastMCP) | Stdio | Python venv | 381.0 ms | 64.2 MB | 214 req/s |
-| `sshaaf/keycloak-mcp-server` (Quarkus Native) | HTTP | 74.1 MB | 42.5 ms | 160.3 MB | 227 req/s |
-| `sshaaf/keycloak-mcp-server` (Quarkus JVM) | HTTP | 23.4 MB JAR / 626 MB | 1,288.7 ms | 310.9 MB | 236 req/s |
+| **`gocloak-mcp` (Go)** | **Stdio / HTTP** | **10.2 MB / 21.1 MB** | **6.5 ms / 21.2 ms** | **16.4 MB / 17.2 MB** | **1,525 / 1,640 req/s** |
+| `MnemoShare/mnemoshare-keycloak-mcp` (Go) | Stdio / HTTP | 10.4 MB | 12.6 ms / 21.0 ms | 17.4 MB / 19.5 MB | 1,507 / 1,710 req/s |
+| `HaithamOumerzoug/keycloak-mcp` (TS/Node) | Stdio | Node runtime | 69.5 ms | 90.7 MB | 597 req/s |
+| `idoyudha/mcp-keycloak` (Python/FastMCP) | Stdio | Python venv | 381.9 ms | 64.2 MB | 216 req/s |
+| `sshaaf/keycloak-mcp-server` (Quarkus Native) | HTTP | 74.1 MB | 42.1 ms | 160.5 MB | 228 req/s |
+| `sshaaf/keycloak-mcp-server` (Quarkus JVM) | HTTP | 23.4 MB JAR / 626 MB | 1,434.2 ms | 316.6 MB | 230 req/s |
 
 Use your deployment platform's secret manager to provide secrets. Do not put
 credentials in command-line arguments, configuration files, or logs.
