@@ -1,0 +1,73 @@
+version: 2
+
+project_name: gocloak-mcp
+
+before:
+  hooks:
+    - go mod download
+    - go mod verify
+
+builds:
+  - id: gocloak-mcp
+    main: ./cmd/gocloak-mcp
+    binary: gocloak-mcp
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+
+homebrew_casks:
+  - name: gocloak-mcp
+    binaries:
+      - gocloak-mcp
+    homepage: "https://github.com/Nerzal/gocloak-mcp"
+    description: "Security-first, read-only Keycloak MCP server built in Go with GoCloak v15"
+    license: "Apache-2.0"
+    skip_upload: '{{ if eq .Env.HOMEBREW_TAP_GITHUB_TOKEN "" }}true{{ else }}auto{{ end }}'
+    repository:
+      owner: Nerzal
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    commit_msg_template: "Brew cask update for {{ .ProjectName }} version {{ .Tag }}"
+    caveats: |
+      Configure KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID, and KEYCLOAK_CLIENT_SECRET
+      via environment variables in your MCP client configuration.

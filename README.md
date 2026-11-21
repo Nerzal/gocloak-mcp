@@ -51,7 +51,83 @@ only the read-only `realm-management` roles required for the tools you use:
 
 Do not use the `master` realm or grant `realm-admin` unless explicitly required.
 
-## Run
+## Installation
+
+### Homebrew (macOS & Linux)
+
+```sh
+brew install --cask nerzal/tap/gocloak-mcp
+```
+
+### Prebuilt binaries (GitHub Releases)
+
+Download the archive for your platform (`darwin`, `linux`, `windows` for `amd64` and `arm64`) from the [GitHub Releases](https://github.com/Nerzal/gocloak-mcp/releases) page, verify the SHA-256 checksum against `checksums.txt`, and place `gocloak-mcp` on your `PATH`.
+
+### Docker / GHCR (multi-arch: `linux/amd64`, `linux/arm64`)
+
+```sh
+docker pull ghcr.io/nerzal/gocloak-mcp:latest
+```
+
+The image contains a static binary on `gcr.io/distroless/static-debian12:nonroot`.
+
+### Go install (from source)
+
+```sh
+go install github.com/Nerzal/gocloak-mcp/cmd/gocloak-mcp@latest
+```
+
+## MCP client configuration
+
+### Native binary (Stdio)
+
+Works with Claude Desktop, Cursor, VS Code, Claude Code, and other Stdio MCP clients:
+
+```json
+{
+  "mcpServers": {
+    "keycloak": {
+      "command": "gocloak-mcp",
+      "env": {
+        "KEYCLOAK_URL": "https://keycloak.example.com",
+        "KEYCLOAK_REALM": "example",
+        "KEYCLOAK_CLIENT_ID": "gocloak-mcp",
+        "KEYCLOAK_CLIENT_SECRET": "<injected by your secret manager>"
+      }
+    }
+  }
+}
+```
+
+### Docker container (Stdio)
+
+Run isolated without installing a local binary:
+
+```json
+{
+  "mcpServers": {
+    "keycloak": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "KEYCLOAK_URL",
+        "-e", "KEYCLOAK_REALM",
+        "-e", "KEYCLOAK_CLIENT_ID",
+        "-e", "KEYCLOAK_CLIENT_SECRET",
+        "ghcr.io/nerzal/gocloak-mcp:latest"
+      ],
+      "env": {
+        "KEYCLOAK_URL": "https://keycloak.example.com",
+        "KEYCLOAK_REALM": "example",
+        "KEYCLOAK_CLIENT_ID": "gocloak-mcp",
+        "KEYCLOAK_CLIENT_SECRET": "<injected by your secret manager>"
+      }
+    }
+  }
+}
+```
+
+## Run directly
 
 ### Stdio mode (default)
 
@@ -60,7 +136,7 @@ export KEYCLOAK_URL=https://keycloak.example.com
 export KEYCLOAK_REALM=example
 export KEYCLOAK_CLIENT_ID=gocloak-mcp
 export KEYCLOAK_CLIENT_SECRET='<injected by your secret manager>'
-go run ./cmd/keycloak-mcp
+go run ./cmd/gocloak-mcp
 ```
 
 ### Streamable HTTP mode
@@ -69,7 +145,21 @@ go run ./cmd/keycloak-mcp
 export MCP_TRANSPORT=http
 export MCP_HTTP_ADDR=127.0.0.1:8080
 export MCP_HTTP_BEARER_TOKEN='<at least 32 random chars for non-loopback>'
-go run ./cmd/keycloak-mcp
+go run ./cmd/gocloak-mcp
+```
+
+Or via Docker:
+
+```sh
+docker run --rm -p 127.0.0.1:8080:8080 \
+  -e MCP_TRANSPORT=http \
+  -e MCP_HTTP_ADDR=0.0.0.0:8080 \
+  -e MCP_HTTP_BEARER_TOKEN='<at least 32 random chars>' \
+  -e KEYCLOAK_URL=https://keycloak.example.com \
+  -e KEYCLOAK_REALM=example \
+  -e KEYCLOAK_CLIENT_ID=gocloak-mcp \
+  -e KEYCLOAK_CLIENT_SECRET='<injected by your secret manager>' \
+  ghcr.io/nerzal/gocloak-mcp:latest
 ```
 
 Exposes `/mcp` (Streamable HTTP MCP endpoint) and `/healthz` (liveness probe).
@@ -97,10 +187,8 @@ config secrets, or raw admin-event payloads).
 make check
 ```
 
-## Container
+## Building the container locally
 
 ```sh
 docker build -t gocloak-mcp .
 ```
-
-The image contains a static binary on `gcr.io/distroless/static-debian12:nonroot`.
