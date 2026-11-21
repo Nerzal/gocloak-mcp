@@ -535,6 +535,7 @@ def file_size_mb(path: str | None) -> float | None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Head-to-head Keycloak MCP server benchmark")
     parser.add_argument("--gocloak-bin", required=True, help="Path to gocloak-mcp binary")
+    parser.add_argument("--mnemoshare-bin", help="Path to MnemoShare/mnemoshare-keycloak-mcp binary")
     parser.add_argument("--haitham-entry", help="Path to HaithamOumerzoug/keycloak-mcp dist/server.js")
     parser.add_argument("--idoyudha-bin", help="Path to idoyudha/mcp-keycloak executable")
     parser.add_argument("--sshaaf-native", help="Path to sshaaf/keycloak-mcp-server native binary")
@@ -569,6 +570,33 @@ def main() -> int:
         res["binary_mb"] = file_size_mb(args.gocloak_bin)
         results.append(res)
         print(f"[DONE] {res}", file=sys.stderr)
+
+        mnemoshare_env = {
+            "KEYCLOAK_URL": kc_url,
+            "KEYCLOAK_REALM": "example",
+            "KEYCLOAK_DEFAULT_REALM": "example",
+            "KEYCLOAK_AUTH_MODE": "client_credentials",
+            "KEYCLOAK_CLIENT_ID": "gocloak-mcp",
+            "KEYCLOAK_CLIENT_SECRET": "benchmark-secret-value",
+            "LOG_LEVEL": "error",
+        }
+        if args.mnemoshare_bin and os.path.exists(args.mnemoshare_bin):
+            try:
+                res = benchmark_stdio_target(
+                    name="MnemoShare/mnemoshare-keycloak-mcp (Go)",
+                    cmd=[args.mnemoshare_bin],
+                    env={**mnemoshare_env, "TRANSPORT": "stdio"},
+                    tool_name="list_users",
+                    tool_args={"realm": "example", "max": 50},
+                    cold_runs=5,
+                    warmup=10,
+                    iterations=100,
+                )
+                res["binary_mb"] = file_size_mb(args.mnemoshare_bin)
+                results.append(res)
+                print(f"[DONE] {res}", file=sys.stderr)
+            except Exception as exc:
+                print(f"[WARN] MnemoShare stdio failed: {exc}", file=sys.stderr)
 
         if args.haitham_entry and os.path.exists(args.haitham_entry):
             try:
@@ -638,6 +666,28 @@ def main() -> int:
         res["binary_mb"] = file_size_mb(args.gocloak_bin)
         results.append(res)
         print(f"[DONE] {res}", file=sys.stderr)
+
+        if args.mnemoshare_bin and os.path.exists(args.mnemoshare_bin):
+            try:
+                port = find_free_port()
+                res = benchmark_http_target(
+                    name="MnemoShare/mnemoshare-keycloak-mcp (Go)",
+                    cmd=[args.mnemoshare_bin],
+                    env={**mnemoshare_env, "TRANSPORT": "http", "PORT": str(port)},
+                    port=port,
+                    path="/mcp",
+                    tool_name="list_users",
+                    tool_args={"realm": "example", "max": 50},
+                    cold_runs=3,
+                    warmup=20,
+                    iterations=300,
+                    concurrency=10,
+                )
+                res["binary_mb"] = file_size_mb(args.mnemoshare_bin)
+                results.append(res)
+                print(f"[DONE] {res}", file=sys.stderr)
+            except Exception as exc:
+                print(f"[WARN] MnemoShare HTTP failed: {exc}", file=sys.stderr)
 
         if args.sshaaf_native and os.path.exists(args.sshaaf_native):
             try:

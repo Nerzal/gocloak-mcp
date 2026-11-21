@@ -30,6 +30,12 @@ jobs:
       - name: Build gocloak-mcp
         run: CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /tmp/bench/gocloak-mcp ./cmd/gocloak-mcp
 
+      - name: Fetch & build MnemoShare/mnemoshare-keycloak-mcp (Go)
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/MnemoShare/mnemoshare-keycloak-mcp.git /tmp/bench/mnemoshare
+          (cd /tmp/bench/mnemoshare && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /tmp/bench/mnemoshare-keycloak-mcp ./cmd/server)
+
       - name: Fetch sshaaf/keycloak-mcp-server v0.4.0 (Native + JVM)
         run: |
           set -euo pipefail
@@ -72,6 +78,7 @@ jobs:
           set -euo pipefail
           python3 benchmarks/run_benchmarks.py \
             --gocloak-bin /tmp/bench/gocloak-mcp \
+            --mnemoshare-bin /tmp/bench/mnemoshare-keycloak-mcp \
             --haitham-entry /tmp/bench/haitham/dist/server.js \
             --idoyudha-bin /tmp/bench/idoyudha/.venv/bin/mcp-keycloak \
             --sshaaf-native /tmp/bench/sshaaf/keycloak-mcp-server-linux \
