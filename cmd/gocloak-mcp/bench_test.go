@@ -86,6 +86,28 @@ func initMCPSession(b *testing.B, client *http.Client, url string) string {
 	return sessionID
 }
 
+func postMCPBench(b *testing.B, client *http.Client, url, sessionID string, body []byte) {
+	b.Helper()
+	req, err := http.NewRequestWithContext(b.Context(), http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		b.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json, text/event-stream")
+	if sessionID != "" {
+		req.Header.Set("Mcp-Session-Id", sessionID)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		b.Fatal(err)
+	}
+	_, _ = io.Copy(io.Discard, resp.Body)
+	_ = resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b.Fatalf("call status = %d", resp.StatusCode)
+	}
+}
+
 func BenchmarkEndToEndHTTPListUsers50(b *testing.B) {
 	kcSrv := newMockKeycloakServer(b, 50)
 	defer kcSrv.Close()
@@ -116,23 +138,6 @@ func BenchmarkEndToEndHTTPListUsers50(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for b.Loop() {
-		req, err := http.NewRequestWithContext(b.Context(), http.MethodPost, mcpURL, bytes.NewReader(callBody))
-		if err != nil {
-			b.Fatal(err)
-		}
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "application/json, text/event-stream")
-		if sessionID != "" {
-			req.Header.Set("Mcp-Session-Id", sessionID)
-		}
-		resp, err := client.Do(req)
-		if err != nil {
-			b.Fatal(err)
-		}
-		_, _ = io.Copy(io.Discard, resp.Body)
-		_ = resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			b.Fatalf("call status = %d", resp.StatusCode)
-		}
+		postMCPBench(b, client, mcpURL, sessionID, callBody)
 	}
 }
