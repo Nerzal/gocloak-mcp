@@ -40,8 +40,13 @@ type adminEventsOutput struct {
 	Events []keycloak.AdminEventInfo `json:"events"`
 }
 
+type certsOutput struct {
+	Keys []keycloak.JWKInfo `json:"keys"`
+}
+
 func registerRealmTools(server *mcp.Server, deps toolDeps) {
 	registerRealmInfoTools(server, deps)
+	registerRealmSecurityPostureTools(server, deps)
 	registerEventTools(server, deps)
 }
 
@@ -59,11 +64,68 @@ func registerRealmInfoTools(server *mcp.Server, deps toolDeps) {
 
 	addFastTool(server, &mcp.Tool{
 		Name:        "get_realm_info",
-		Description: "Get basic information about a configured Keycloak realm.",
+		Description: "Get safe configuration and security posture metadata for a Keycloak realm.",
 		Annotations: deps.annotations,
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "get_realm_info", func(rCtx context.Context) (keycloak.RealmInfo, error) {
 			res, callErr := deps.service.GetRealmInfo(rCtx, in.Realm)
+			return res, sanitizeErr(callErr)
+		})
+	})
+
+	addFastTool(server, &mcp.Tool{
+		Name:        "get_server_info",
+		Description: "Get Keycloak server version and safe runtime system information.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_server_info", func(rCtx context.Context) (keycloak.ServerInfo, error) {
+			res, callErr := deps.service.GetServerInfo(rCtx)
+			return res, sanitizeErr(callErr)
+		})
+	})
+}
+
+func registerRealmSecurityPostureTools(server *mcp.Server, deps toolDeps) {
+	addFastTool(server, &mcp.Tool{
+		Name:        "get_realm_keys",
+		Description: "Get active signing/encryption key IDs and public key metadata for a Keycloak realm.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_realm_keys", func(rCtx context.Context) (keycloak.RealmKeysInfo, error) {
+			res, callErr := deps.service.GetRealmKeys(rCtx, in.Realm)
+			return res, sanitizeErr(callErr)
+		})
+	})
+
+	addFastTool(server, &mcp.Tool{
+		Name:        "get_realm_certs",
+		Description: "Get public OIDC JWKS certificates for a Keycloak realm.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_realm_certs", func(rCtx context.Context) (certsOutput, error) {
+			keys, callErr := deps.service.GetRealmCerts(rCtx, in.Realm)
+			return certsOutput{Keys: keys}, sanitizeErr(callErr)
+		})
+	})
+
+	addFastTool(server, &mcp.Tool{
+		Name:        "get_realm_issuer",
+		Description: "Get OIDC issuer and public key metadata for a Keycloak realm.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_realm_issuer", func(rCtx context.Context) (keycloak.RealmIssuerInfo, error) {
+			res, callErr := deps.service.GetRealmIssuer(rCtx, in.Realm)
+			return res, sanitizeErr(callErr)
+		})
+	})
+
+	addFastTool(server, &mcp.Tool{
+		Name:        "get_user_profile_config",
+		Description: "Get the configured user profile schema (attributes, groups, unmanaged attribute policy) for a realm.",
+		Annotations: deps.annotations,
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, any, error) {
+		return executeTool(ctx, deps, "get_user_profile_config", func(rCtx context.Context) (keycloak.UserProfileConfigInfo, error) {
+			res, callErr := deps.service.GetUserProfileConfig(rCtx, in.Realm)
 			return res, sanitizeErr(callErr)
 		})
 	})

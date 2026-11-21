@@ -169,14 +169,16 @@ func connectInMemory(t *testing.T, svc Service, logger *slog.Logger) (session *m
 	}
 }
 
-func TestAll32ReadOnlyToolsRegisteredAndCallable(t *testing.T) {
+const expectedReadOnlyToolCount = 98
+
+func TestAll98ReadOnlyToolsRegisteredAndCallable(t *testing.T) {
 	ctx := context.Background()
 	session, cleanup := connectInMemory(t, &stubService{}, nil)
 	defer cleanup()
 
 	listed, err := session.ListTools(ctx, nil)
-	if err != nil || len(listed.Tools) != 32 {
-		t.Fatalf("ListTools() count = %d, err = %v; want 32", len(listed.Tools), err)
+	if err != nil || len(listed.Tools) != expectedReadOnlyToolCount {
+		t.Fatalf("ListTools() count = %d, err = %v; want %d", len(listed.Tools), err, expectedReadOnlyToolCount)
 	}
 	for _, tool := range listed.Tools {
 		assertReadOnlyToolCallable(ctx, t, session, tool)
@@ -196,23 +198,78 @@ func assertReadOnlyToolCallable(ctx context.Context, t *testing.T, session *mcp.
 }
 
 var toolSampleArgs = map[string]map[string]any{
-	"get_user":                   {"userId": "u1"},
-	"get_user_sessions":          {"userId": "u1"},
-	"get_user_groups":            {"userId": "u1"},
-	"get_user_roles":             {"userId": "u1"},
-	"get_client":                 {"clientUuid": "c1"},
-	"get_client_service_account": {"clientUuid": "c1"},
-	"list_client_roles":          {"clientUuid": "c1"},
-	"get_client_scope":           {"scopeId": "sc1"},
-	"get_realm_role":             {"roleName": "viewer"},
-	"get_users_in_role":          {"roleName": "viewer"},
-	"get_users_in_client_role":   {"clientUuid": "c1", "roleName": "read"},
-	"get_group":                  {"groupId": "g1"},
-	"get_group_members":          {"groupId": "g1"},
-	"get_group_roles":            {"groupId": "g1"},
-	"get_flow_executions":        {"flowAlias": "browser"},
-	"get_identity_provider":      {"alias": "google"},
-	"get_organization_members":   {"organizationId": "o1"},
+	"get_user":                             {"userId": "u1"},
+	"get_user_sessions":                    {"userId": "u1"},
+	"get_user_offline_sessions":            {"userId": "u1", "clientUuid": "c1"},
+	"get_user_groups":                      {"userId": "u1"},
+	"get_user_roles":                       {"userId": "u1"},
+	"get_user_credentials":                 {"userId": "u1"},
+	"get_user_federated_identities":        {"userId": "u1"},
+	"get_user_brute_force_status":          {"userId": "u1"},
+	"get_user_composite_realm_roles":       {"userId": "u1"},
+	"get_user_composite_client_roles":      {"userId": "u1", "clientUuid": "c1"},
+	"get_user_available_realm_roles":       {"userId": "u1"},
+	"get_user_available_client_roles":      {"userId": "u1", "clientUuid": "c1"},
+	"get_client":                           {"clientUuid": "c1"},
+	"get_client_service_account":           {"clientUuid": "c1"},
+	"list_client_roles":                    {"clientUuid": "c1"},
+	"get_client_role":                      {"clientUuid": "c1", "roleName": "read"},
+	"get_client_protocol_mappers":          {"clientUuid": "c1"},
+	"get_client_default_scopes":            {"clientUuid": "c1"},
+	"get_client_optional_scopes":           {"clientUuid": "c1"},
+	"get_client_scope_mappings":            {"clientUuid": "c1"},
+	"get_client_sessions":                  {"clientUuid": "c1"},
+	"get_client_offline_sessions":          {"clientUuid": "c1"},
+	"get_client_scope":                     {"scopeId": "sc1"},
+	"list_client_scope_protocol_mappers":   {"scopeId": "sc1"},
+	"get_client_scope_protocol_mapper":     {"scopeId": "sc1", "mapperId": "pm1"},
+	"get_client_scope_realm_roles":         {"scopeId": "sc1"},
+	"get_client_scope_client_roles":        {"scopeId": "sc1", "clientUuid": "c1"},
+	"get_realm_role":                       {"roleName": "viewer"},
+	"get_role_by_id":                       {"roleId": "r1"},
+	"get_realm_role_composites":            {"roleName": "viewer"},
+	"get_role_composites_by_id":            {"roleId": "r1"},
+	"get_users_in_role":                    {"roleName": "viewer"},
+	"get_users_in_client_role":             {"clientUuid": "c1", "roleName": "read"},
+	"get_groups_in_role":                   {"roleName": "viewer"},
+	"get_groups_in_client_role":            {"clientUuid": "c1", "roleName": "read"},
+	"get_group":                            {"groupId": "g1"},
+	"get_group_by_path":                    {"groupPath": "/eng/devs"},
+	"list_child_groups":                    {"groupId": "g1"},
+	"get_group_members":                    {"groupId": "g1"},
+	"get_group_roles":                      {"groupId": "g1"},
+	"get_group_composite_realm_roles":      {"groupId": "g1"},
+	"get_group_composite_client_roles":     {"groupId": "g1", "clientUuid": "c1"},
+	"get_group_available_realm_roles":      {"groupId": "g1"},
+	"get_group_available_client_roles":     {"groupId": "g1", "clientUuid": "c1"},
+	"get_authentication_flow":              {"flowId": "f1"},
+	"get_flow_executions":                  {"flowAlias": "browser"},
+	"get_authenticator_config":             {"configId": "ac1"},
+	"get_required_action":                  {"alias": "CONFIGURE_TOTP"},
+	"get_identity_provider":                {"alias": "google"},
+	"list_identity_provider_mappers":       {"alias": "google"},
+	"get_identity_provider_mapper":         {"alias": "google", "mapperId": "im1"},
+	"get_organization":                     {"organizationId": "o1"},
+	"get_organization_members":             {"organizationId": "o1"},
+	"count_organization_members":           {"organizationId": "o1"},
+	"get_organization_member":              {"organizationId": "o1", "userId": "u1"},
+	"get_user_organizations":               {"userId": "u1"},
+	"list_organization_identity_providers": {"organizationId": "o1"},
+	"list_organization_invitations":        {"organizationId": "o1"},
+	"list_organization_groups":             {"organizationId": "o1"},
+	"get_component":                        {"componentId": "cmp1"},
+	"get_resource_server":                  {"clientUuid": "c1"},
+	"list_authz_resources":                 {"clientUuid": "c1"},
+	"get_authz_resource":                   {"clientUuid": "c1", "resourceId": "res1"},
+	"list_authz_scopes":                    {"clientUuid": "c1"},
+	"get_authz_scope":                      {"clientUuid": "c1", "scopeId": "as1"},
+	"list_authz_policies":                  {"clientUuid": "c1"},
+	"get_authz_policy":                     {"clientUuid": "c1", "policyId": "pol1"},
+	"list_authz_permissions":               {"clientUuid": "c1"},
+	"get_authz_permission":                 {"clientUuid": "c1", "permissionId": "perm1"},
+	"get_policy_associated_policies":       {"clientUuid": "c1", "policyId": "pol1"},
+	"get_policy_resources":                 {"clientUuid": "c1", "policyId": "pol1"},
+	"get_policy_scopes":                    {"clientUuid": "c1", "policyId": "pol1"},
 }
 
 func sampleArgs(toolName string) map[string]any {

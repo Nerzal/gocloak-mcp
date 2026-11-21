@@ -8,9 +8,10 @@
 
 A security-first, read-only Keycloak MCP server built in Go with the official
 MCP Go SDK and GoCloak v15. Supports **Stdio** (default) and **Streamable HTTP**
-transports, multi-realm allowlisting, and full read-only parity across Users,
-Clients, Client Scopes, Roles, Groups, Realms, Events, Authentication Flows,
-Required Actions, Identity Providers, and Keycloak 26+ Organizations.
+transports, multi-realm allowlisting, and **feature-complete read-only coverage (98 tools across 10 domains)**:
+Users & Attack Detection, Clients & Client Scopes, Roles & Composites, Groups & Hierarchies,
+Realms, Keys/JWKS & Events, Authentication Flows & Required Actions, Identity Providers & Mappers,
+Keycloak 26+ Organizations, Components / User Federation (LDAP/Kerberos), and Fine-Grained Authorization Services (UMA/Authz).
 
 In Stdio mode, standard output is strictly reserved for JSON-RPC frames and all
 structured JSON logs are written to standard error with automatic redaction.
@@ -62,10 +63,12 @@ credentials in command-line arguments, configuration files, or logs.
 Create a dedicated confidential client with service accounts enabled and assign
 only the read-only `realm-management` roles required for the tools you use:
 
-- `query-users`, `view-users` — user, session, and group-membership tools
-- `query-clients`, `view-clients` — client, client-role, and client-scope tools
-- `query-groups` — group tools
-- `view-realm` — realm, role, auth-flow, required-action, and IdP tools
+- `query-users`, `view-users` — user, session, credential-metadata, brute-force, federated-identity, and group-membership tools
+- `query-clients`, `view-clients` — client, protocol-mapper, client-role, client-session, and client-scope tools
+- `query-groups` — group, subgroup, and default-group tools
+- `view-realm` — realm, key/JWKS, user-profile, role, composite-role, auth-flow, required-action, component/federation, and organization tools
+- `view-identity-providers` — identity provider and IdP mapper tools
+- `view-authorization` — fine-grained authorization (resource server, resources, scopes, policies, permissions) tools
 - `view-events` — login and admin event tools
 
 Do not use the `master` realm or grant `realm-admin` unless explicitly required.
@@ -183,22 +186,26 @@ docker run --rm -p 127.0.0.1:8080:8080 \
 
 Exposes `/mcp` (Streamable HTTP MCP endpoint) and `/healthz` (liveness probe).
 
-## Read-Only Tools (32)
+## Read-Only Tools (98)
 
-All tools declare `readOnlyHint: true`, `idempotentHint: true`, and
+All 98 tools declare `readOnlyHint: true`, `idempotentHint: true`, and
 `destructiveHint: false`, accept an optional `realm` parameter checked against
 `KEYCLOAK_ALLOWED_REALMS`, cap pagination at `max <= 100` (default `50`), and
-return safe allowlist DTOs (never exposing credentials, client secrets, IdP
-config secrets, or raw admin-event payloads).
+return safe allowlist DTOs (never exposing credentials/hashes, client secrets,
+registration access tokens, IdP/component config secrets, organization invite
+bearer links, or raw admin-event payloads). `get_client_secret` is intentionally
+excluded to enforce OWASP MCP01.
 
-- **Users:** `list_users`, `get_user`, `count_users`, `get_user_sessions`, `get_user_groups`, `get_user_roles`
-- **Clients & Scopes:** `list_clients`, `get_client`, `get_client_service_account`, `list_client_roles`, `list_client_scopes`, `get_client_scope`
-- **Roles:** `list_realm_roles`, `get_realm_role`, `get_users_in_role`, `get_users_in_client_role`
-- **Groups:** `list_groups`, `count_groups`, `get_group`, `get_group_members`, `get_group_roles`
-- **Realms & Events:** `list_realms`, `get_realm_info`, `list_events`, `list_admin_events`
-- **Auth Flows & Required Actions:** `list_authentication_flows`, `get_flow_executions`, `list_required_actions`
-- **Identity Providers:** `list_identity_providers`, `get_identity_provider`
-- **Organizations (Keycloak 26+):** `list_organizations`, `get_organization_members`
+- **Users & Attack Detection (14):** `list_users`, `get_user`, `count_users`, `get_user_sessions`, `get_user_offline_sessions`, `get_user_groups`, `get_user_roles`, `get_user_credentials`, `get_user_federated_identities`, `get_user_brute_force_status`, `get_user_composite_realm_roles`, `get_user_composite_client_roles`, `get_user_available_realm_roles`, `get_user_available_client_roles`
+- **Clients & Client Scopes (19):** `list_clients`, `get_client`, `get_client_service_account`, `list_client_roles`, `get_client_role`, `get_client_protocol_mappers`, `get_client_default_scopes`, `get_client_optional_scopes`, `get_client_scope_mappings`, `get_client_sessions`, `get_client_offline_sessions`, `list_client_scopes`, `get_client_scope`, `list_client_scope_protocol_mappers`, `get_client_scope_protocol_mapper`, `get_default_default_client_scopes`, `get_default_optional_client_scopes`, `get_client_scope_realm_roles`, `get_client_scope_client_roles`
+- **Roles & Composites (9):** `list_realm_roles`, `get_realm_role`, `get_role_by_id`, `get_realm_role_composites`, `get_role_composites_by_id`, `get_users_in_role`, `get_users_in_client_role`, `get_groups_in_role`, `get_groups_in_client_role`
+- **Groups & Hierarchies (12):** `list_groups`, `count_groups`, `get_group`, `get_group_by_path`, `list_child_groups`, `get_default_groups`, `get_group_members`, `get_group_roles`, `get_group_composite_realm_roles`, `get_group_composite_client_roles`, `get_group_available_realm_roles`, `get_group_available_client_roles`
+- **Realms, Keys, Events & Server Info (9):** `list_realms`, `get_realm_info`, `get_realm_keys`, `get_realm_certs`, `get_realm_issuer`, `get_user_profile_config`, `get_server_info`, `list_events`, `list_admin_events`
+- **Authentication Flows & Required Actions (7):** `list_authentication_flows`, `get_authentication_flow`, `get_flow_executions`, `get_authenticator_config`, `list_required_actions`, `get_required_action`, `list_unregistered_required_actions`
+- **Identity Providers (4):** `list_identity_providers`, `get_identity_provider`, `list_identity_provider_mappers`, `get_identity_provider_mapper`
+- **Organizations — Keycloak 26+ (10):** `list_organizations`, `get_organization`, `count_organizations`, `get_organization_members`, `count_organization_members`, `get_organization_member`, `get_user_organizations`, `list_organization_identity_providers`, `list_organization_invitations`, `list_organization_groups`
+- **Components / User Federation (2):** `list_components`, `get_component`
+- **Fine-Grained Authorization Services (12):** `get_resource_server`, `list_authz_resources`, `get_authz_resource`, `list_authz_scopes`, `get_authz_scope`, `list_authz_policies`, `get_authz_policy`, `list_authz_permissions`, `get_authz_permission`, `get_policy_associated_policies`, `get_policy_resources`, `get_policy_scopes`
 
 ## Build and verification
 

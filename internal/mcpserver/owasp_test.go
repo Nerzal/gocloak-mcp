@@ -39,8 +39,8 @@ func TestOWASP_MCP02_MCP03_ToolCatalogIntegrityAndNoPoisoning(t *testing.T) {
 	defer cleanup()
 
 	listed, err := session.ListTools(ctx, nil)
-	if err != nil || len(listed.Tools) != 32 {
-		t.Fatalf("ListTools() = %d, %v; want 32", len(listed.Tools), err)
+	if err != nil || len(listed.Tools) != expectedReadOnlyToolCount {
+		t.Fatalf("ListTools() = %d, %v; want %d", len(listed.Tools), err, expectedReadOnlyToolCount)
 	}
 	poisonMarkers := []string{"ignore previous", "system:", "<script", "disregard"}
 	for _, tool := range listed.Tools {

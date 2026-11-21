@@ -56,6 +56,81 @@ func (s *service) GetGroup(ctx context.Context, realm, groupID string) (GroupInf
 	return mapGroup(group), nil
 }
 
+func (s *service) GetGroupByPath(ctx context.Context, realm, groupPath string) (GroupInfo, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return GroupInfo{}, err
+	}
+	if valErr := validateGroupPath(groupPath); valErr != nil {
+		return GroupInfo{}, valErr
+	}
+	group, err := runWithTokenRetry(ctx, s.tokens, func(token string) (*gocloak.Group, error) {
+		res, callErr := s.client.GetGroupByPath(ctx, token, targetRealm, groupPath)
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		if res == nil {
+			return nil, errKeycloakRequest
+		}
+		return res, nil
+	})
+	if err != nil {
+		return GroupInfo{}, err
+	}
+	return mapGroup(group), nil
+}
+
+func (s *service) ListChildGroups(ctx context.Context, realm, groupID string, first, pageSize int, search string) ([]GroupInfo, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return nil, err
+	}
+	if valErr := validateIdentifier(groupID); valErr != nil {
+		return nil, valErr
+	}
+	if valErr := validatePagination(first, pageSize); valErr != nil {
+		return nil, valErr
+	}
+	if valErr := validateFilterString(search); valErr != nil {
+		return nil, valErr
+	}
+	brief := true
+	groups, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Group, error) {
+		res, callErr := s.client.GetChildGroups(ctx, token, targetRealm, groupID, gocloak.GetChildGroupsParams{
+			BriefRepresentation: &brief,
+			First:               &first,
+			Max:                 &pageSize,
+			Search:              optionalStringPtr(search),
+		})
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		return res, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapGroups(groups), nil
+}
+
+func (s *service) GetDefaultGroups(ctx context.Context, realm string) ([]GroupInfo, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return nil, err
+	}
+	groups, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Group, error) {
+		res, callErr := s.client.GetDefaultGroups(ctx, token, targetRealm)
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		return res, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapGroups(groups), nil
+}
+
 func (s *service) GetGroupMembers(ctx context.Context, realm, groupID string, first, pageSize int) ([]User, error) {
 	targetRealm, err := s.resolveRealm(realm)
 	if err != nil {
@@ -91,6 +166,60 @@ func (s *service) GetGroupRoles(ctx context.Context, realm, groupID string) (Rol
 		return RoleMappings{}, err
 	}
 	return mapRoleMappings(mappings), nil
+}
+
+func (s *service) GetGroupCompositeRealmRoles(ctx context.Context, realm, groupID string) ([]RoleInfo, error) {
+	return s.fetchGroupRoleList(ctx, realm, groupID, "", func(token, targetRealm string) ([]*gocloak.Role, error) {
+		return s.client.GetCompositeRealmRolesByGroupID(ctx, token, targetRealm, groupID)
+	})
+}
+
+func (s *service) GetGroupCompositeClientRoles(ctx context.Context, realm, groupID, clientUUID string) ([]RoleInfo, error) {
+	return s.fetchGroupRoleList(ctx, realm, groupID, clientUUID, func(token, targetRealm string) ([]*gocloak.Role, error) {
+		return s.client.GetCompositeClientRolesByGroupID(ctx, token, targetRealm, clientUUID, groupID)
+	})
+}
+
+func (s *service) GetGroupAvailableRealmRoles(ctx context.Context, realm, groupID string) ([]RoleInfo, error) {
+	return s.fetchGroupRoleList(ctx, realm, groupID, "", func(token, targetRealm string) ([]*gocloak.Role, error) {
+		return s.client.GetAvailableRealmRolesByGroupID(ctx, token, targetRealm, groupID)
+	})
+}
+
+func (s *service) GetGroupAvailableClientRoles(ctx context.Context, realm, groupID, clientUUID string) ([]RoleInfo, error) {
+	return s.fetchGroupRoleList(ctx, realm, groupID, clientUUID, func(token, targetRealm string) ([]*gocloak.Role, error) {
+		return s.client.GetAvailableClientRolesByGroupID(ctx, token, targetRealm, clientUUID, groupID)
+	})
+}
+
+func (s *service) fetchGroupRoleList(
+	ctx context.Context,
+	realm, groupID, clientUUID string,
+	fetch func(token, targetRealm string) ([]*gocloak.Role, error),
+) ([]RoleInfo, error) {
+	targetRealm, err := s.resolveRealm(realm)
+	if err != nil {
+		return nil, err
+	}
+	if valErr := validateIdentifier(groupID); valErr != nil {
+		return nil, valErr
+	}
+	if clientUUID != "" {
+		if valErr := validateIdentifier(clientUUID); valErr != nil {
+			return nil, valErr
+		}
+	}
+	roles, err := runWithTokenRetry(ctx, s.tokens, func(token string) ([]*gocloak.Role, error) {
+		res, callErr := fetch(token, targetRealm)
+		if callErr != nil {
+			return nil, classifyUpstreamError(callErr)
+		}
+		return res, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return mapRoles(roles), nil
 }
 
 func (s *service) fetchGroups(ctx context.Context, token, realm string, first, pageSize int, search string) ([]*gocloak.Group, error) {

@@ -7,237 +7,124 @@ import (
 	"github.com/Nerzal/gocloak/v15"
 )
 
+var _ Client = (*gocloak.GoCloak)(nil)
+
 // Client is the read-only subset of GoCloak used by the MCP server.
 type Client interface {
 	GetToken(context.Context, string, gocloak.TokenOptions) (*gocloak.JWT, error)
 
-	// Users
+	// Users & Attack Detection
 	GetUsers(context.Context, string, string, gocloak.GetUsersParams) ([]*gocloak.User, error)
 	GetUserByID(context.Context, string, string, string) (*gocloak.User, error)
 	GetUserCount(context.Context, string, string, gocloak.GetUsersParams) (int, error)
 	GetUserSessions(context.Context, string, string, string) ([]*gocloak.UserSessionRepresentation, error)
+	GetUserOfflineSessionsForClient(context.Context, string, string, string, string) ([]*gocloak.UserSessionRepresentation, error)
 	GetUserGroups(context.Context, string, string, string, gocloak.GetGroupsParams) ([]*gocloak.Group, error)
 	GetRoleMappingByUserID(context.Context, string, string, string) (*gocloak.MappingsRepresentation, error)
+	GetCredentials(context.Context, string, string, string) ([]*gocloak.CredentialRepresentation, error)
+	GetUserFederatedIdentities(context.Context, string, string, string) ([]*gocloak.FederatedIdentityRepresentation, error)
+	GetUserBruteForceDetectionStatus(context.Context, string, string, string) (*gocloak.BruteForceStatus, error)
+	GetCompositeRealmRolesByUserID(context.Context, string, string, string) ([]*gocloak.Role, error)
+	GetCompositeClientRolesByUserID(context.Context, string, string, string, string) ([]*gocloak.Role, error)
+	GetAvailableRealmRolesByUserID(context.Context, string, string, string) ([]*gocloak.Role, error)
+	GetAvailableClientRolesByUserID(context.Context, string, string, string, string) ([]*gocloak.Role, error)
 
 	// Clients & Client Scopes
 	GetClients(context.Context, string, string, gocloak.GetClientsParams) ([]*gocloak.Client, error)
 	GetClient(context.Context, string, string, string) (*gocloak.Client, error)
 	GetClientServiceAccount(context.Context, string, string, string) (*gocloak.User, error)
 	GetClientRoles(context.Context, string, string, string, gocloak.GetRoleParams) ([]*gocloak.Role, error)
+	GetClientRole(context.Context, string, string, string, string) (*gocloak.Role, error)
+	GetClientsDefaultScopes(context.Context, string, string, string) ([]*gocloak.ClientScope, error)
+	GetClientsOptionalScopes(context.Context, string, string, string) ([]*gocloak.ClientScope, error)
+	GetClientScopeMappings(context.Context, string, string, string) (*gocloak.MappingsRepresentation, error)
+	GetClientUserSessions(context.Context, string, string, string, ...gocloak.GetClientUserSessionsParams) ([]*gocloak.UserSessionRepresentation, error)
+	GetClientOfflineSessions(context.Context, string, string, string, ...gocloak.GetClientUserSessionsParams) ([]*gocloak.UserSessionRepresentation, error)
 	GetClientScopes(context.Context, string, string) ([]*gocloak.ClientScope, error)
 	GetClientScope(context.Context, string, string, string) (*gocloak.ClientScope, error)
+	GetClientScopeProtocolMappers(context.Context, string, string, string) ([]*gocloak.ProtocolMappers, error)
+	GetClientScopeProtocolMapper(context.Context, string, string, string, string) (*gocloak.ProtocolMappers, error)
+	GetDefaultDefaultClientScopes(context.Context, string, string) ([]*gocloak.ClientScope, error)
+	GetDefaultOptionalClientScopes(context.Context, string, string) ([]*gocloak.ClientScope, error)
+	GetClientScopesScopeMappingsRealmRoles(context.Context, string, string, string) ([]*gocloak.Role, error)
+	GetClientScopesScopeMappingsClientRoles(context.Context, string, string, string, string) ([]*gocloak.Role, error)
 
 	// Roles
 	GetRealmRoles(context.Context, string, string, gocloak.GetRoleParams) ([]*gocloak.Role, error)
 	GetRealmRole(context.Context, string, string, string) (*gocloak.Role, error)
+	GetRealmRoleByID(context.Context, string, string, string) (*gocloak.Role, error)
+	GetCompositeRealmRoles(context.Context, string, string, string) ([]*gocloak.Role, error)
+	GetCompositeRolesByRoleID(context.Context, string, string, string) ([]*gocloak.Role, error)
 	GetUsersByRoleName(context.Context, string, string, string, gocloak.GetUsersByRoleParams) ([]*gocloak.User, error)
 	GetUsersByClientRoleName(context.Context, string, string, string, string, gocloak.GetUsersByRoleParams) ([]*gocloak.User, error)
+	GetGroupsByRole(context.Context, string, string, string) ([]*gocloak.Group, error)
+	GetGroupsByClientRole(context.Context, string, string, string, string) ([]*gocloak.Group, error)
 
 	// Groups
 	GetGroups(context.Context, string, string, gocloak.GetGroupsParams) ([]*gocloak.Group, error)
 	GetGroupsCount(context.Context, string, string, gocloak.GetGroupsParams) (int, error)
 	GetGroup(context.Context, string, string, string) (*gocloak.Group, error)
+	GetGroupByPath(context.Context, string, string, string) (*gocloak.Group, error)
+	GetChildGroups(context.Context, string, string, string, gocloak.GetChildGroupsParams) ([]*gocloak.Group, error)
+	GetDefaultGroups(context.Context, string, string) ([]*gocloak.Group, error)
 	GetGroupMembers(context.Context, string, string, string, gocloak.GetGroupsParams) ([]*gocloak.User, error)
 	GetRoleMappingByGroupID(context.Context, string, string, string) (*gocloak.MappingsRepresentation, error)
+	GetCompositeRealmRolesByGroupID(context.Context, string, string, string) ([]*gocloak.Role, error)
+	GetCompositeClientRolesByGroupID(context.Context, string, string, string, string) ([]*gocloak.Role, error)
+	GetAvailableRealmRolesByGroupID(context.Context, string, string, string) ([]*gocloak.Role, error)
+	GetAvailableClientRolesByGroupID(context.Context, string, string, string, string) ([]*gocloak.Role, error)
 
-	// Realms & Events
+	// Realms, Keys, Events & Server Info
 	GetRealms(context.Context, string) ([]*gocloak.RealmRepresentation, error)
 	GetRealm(context.Context, string, string) (*gocloak.RealmRepresentation, error)
 	GetEvents(context.Context, string, string, gocloak.GetEventsParams) ([]*gocloak.EventRepresentation, error)
 	GetAdminEvents(context.Context, string, string, gocloak.GetAdminEventsParams) ([]*gocloak.AdminEventRepresentation, error)
+	GetKeyStoreConfig(context.Context, string, string) (*gocloak.KeyStoreConfig, error)
+	GetCerts(context.Context, string) (*gocloak.CertResponse, error)
+	GetIssuer(context.Context, string) (*gocloak.IssuerResponse, error)
+	GetUserProfileConfig(context.Context, string, string) (*gocloak.UserProfileConfig, error)
+	GetServerInfo(context.Context, string) (*gocloak.ServerInfoRepresentation, error)
 
-	// Authentication Flows, Required Actions, Identity Providers & Organizations
+	// Authentication Flows, Required Actions & Identity Providers
 	GetAuthenticationFlows(context.Context, string, string) ([]*gocloak.AuthenticationFlowRepresentation, error)
+	GetAuthenticationFlow(context.Context, string, string, string) (*gocloak.AuthenticationFlowRepresentation, error)
 	GetAuthenticationExecutions(context.Context, string, string, string) ([]*gocloak.ModifyAuthenticationExecutionRepresentation, error)
+	GetAuthenticatorConfig(context.Context, string, string, string) (*gocloak.AuthenticatorConfigRepresentation, error)
 	GetRequiredActions(context.Context, string, string) ([]*gocloak.RequiredActionProviderRepresentation, error)
+	GetRequiredAction(context.Context, string, string, string) (*gocloak.RequiredActionProviderRepresentation, error)
+	GetUnregisteredRequiredActions(context.Context, string, string) ([]*gocloak.UnregisteredRequiredActionProviderRepresentation, error)
 	GetIdentityProviders(context.Context, string, string) ([]*gocloak.IdentityProviderRepresentation, error)
 	GetIdentityProvider(context.Context, string, string, string) (*gocloak.IdentityProviderRepresentation, error)
+	GetIdentityProviderMappers(context.Context, string, string, string) ([]*gocloak.IdentityProviderMapper, error)
+	GetIdentityProviderMapperByID(context.Context, string, string, string, string) (*gocloak.IdentityProviderMapper, error)
+
+	// Organizations (Keycloak 26+)
 	GetOrganizations(context.Context, string, string, gocloak.GetOrganizationsParams) ([]*gocloak.OrganizationRepresentation, error)
+	GetOrganizationByID(context.Context, string, string, string) (*gocloak.OrganizationRepresentation, error)
+	GetOrganizationCount(context.Context, string, string, gocloak.GetOrganizationCountParams) (int64, error)
 	GetOrganizationMembers(context.Context, string, string, string, gocloak.GetMembersParams) ([]*gocloak.MemberRepresentation, error)
-}
+	GetOrganizationMemberCount(context.Context, string, string, string) (int, error)
+	GetOrganizationMemberByID(context.Context, string, string, string, string) (*gocloak.MemberRepresentation, error)
+	GetMemberAssociatedOrganizations(context.Context, string, string, string, bool) ([]*gocloak.OrganizationRepresentation, error)
+	GetOrganizationIdentityProviders(context.Context, string, string, string) ([]*gocloak.IdentityProviderRepresentation, error)
+	GetOrganizationInvitations(context.Context, string, string, string, gocloak.GetOrganizationInvitationsParams) ([]*gocloak.OrganizationInvitationRepresentation, error)
+	GetOrganizationGroups(context.Context, string, string, string, gocloak.GetOrganizationGroupsParams) ([]*gocloak.Group, error)
 
-// UserFilter defines optional filters for listing or counting users.
-type UserFilter struct {
-	Search   string
-	Username string
-	Email    string
-	Exact    bool
-}
+	// Components / User Federation
+	GetComponentsWithParams(context.Context, string, string, gocloak.GetComponentsParams) ([]*gocloak.Component, error)
+	GetComponent(context.Context, string, string, string) (*gocloak.Component, error)
 
-// User contains the safe user fields exposed by the MCP server.
-type User struct {
-	ID            string `json:"id"`
-	Username      string `json:"username,omitempty"`
-	Email         string `json:"email,omitempty"`
-	FirstName     string `json:"firstName,omitempty"`
-	LastName      string `json:"lastName,omitempty"`
-	Enabled       bool   `json:"enabled"`
-	EmailVerified bool   `json:"emailVerified,omitempty"`
-}
-
-// UserSession contains safe metadata for an active Keycloak user session.
-type UserSession struct {
-	ID         string            `json:"id"`
-	UserID     string            `json:"userId,omitempty"`
-	Username   string            `json:"username,omitempty"`
-	Start      int64             `json:"start,omitempty"`
-	LastAccess int64             `json:"lastAccess,omitempty"`
-	Clients    map[string]string `json:"clients,omitempty"`
-}
-
-// ClientFilter defines optional filters for listing clients.
-type ClientFilter struct {
-	ClientID string
-}
-
-// ClientInfo contains the safe client fields exposed by the MCP server.
-type ClientInfo struct {
-	ID                     string `json:"id"`
-	ClientID               string `json:"clientId,omitempty"`
-	Name                   string `json:"name,omitempty"`
-	Description            string `json:"description,omitempty"`
-	Protocol               string `json:"protocol,omitempty"`
-	Enabled                bool   `json:"enabled"`
-	Public                 bool   `json:"publicClient"`
-	StandardFlowEnabled    bool   `json:"standardFlowEnabled,omitempty"`
-	ServiceAccountsEnabled bool   `json:"serviceAccountsEnabled,omitempty"`
-	DirectAccessGrants     bool   `json:"directAccessGrantsEnabled,omitempty"`
-}
-
-// ClientScopeInfo contains safe client scope fields.
-type ClientScopeInfo struct {
-	ID          string `json:"id"`
-	Name        string `json:"name,omitempty"`
-	Description string `json:"description,omitempty"`
-	Protocol    string `json:"protocol,omitempty"`
-}
-
-// RoleInfo contains safe role fields.
-type RoleInfo struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Composite   bool   `json:"composite"`
-	ClientRole  bool   `json:"clientRole"`
-	ContainerID string `json:"containerId,omitempty"`
-}
-
-// RoleMappings groups realm-level and client-level role assignments.
-type RoleMappings struct {
-	RealmRoles  []RoleInfo            `json:"realmRoles"`
-	ClientRoles map[string][]RoleInfo `json:"clientRoles,omitempty"`
-}
-
-// GroupInfo contains safe group metadata.
-type GroupInfo struct {
-	ID   string `json:"id"`
-	Name string `json:"name,omitempty"`
-	Path string `json:"path,omitempty"`
-}
-
-// RealmInfo contains safe realm fields exposed by the MCP server.
-type RealmInfo struct {
-	ID          string `json:"id,omitempty"`
-	Name        string `json:"realm"`
-	DisplayName string `json:"displayName,omitempty"`
-	Enabled     bool   `json:"enabled"`
-}
-
-// EventFilter defines optional filters for querying login/user events.
-type EventFilter struct {
-	Type     []string
-	Client   string
-	UserID   string
-	DateFrom string
-	DateTo   string
-}
-
-// EventInfo contains safe user/login event fields.
-type EventInfo struct {
-	Time      int64  `json:"time,omitempty"`
-	Type      string `json:"type,omitempty"`
-	RealmID   string `json:"realmId,omitempty"`
-	ClientID  string `json:"clientId,omitempty"`
-	UserID    string `json:"userId,omitempty"`
-	SessionID string `json:"sessionId,omitempty"`
-}
-
-// AdminEventFilter defines optional filters for querying admin events.
-type AdminEventFilter struct {
-	OperationTypes []string
-	ResourceTypes  []string
-	ResourcePath   string
-	DateFrom       string
-	DateTo         string
-}
-
-// AdminEventInfo contains safe admin event metadata (omits raw representation payloads).
-type AdminEventInfo struct {
-	Time          int64  `json:"time,omitempty"`
-	OperationType string `json:"operationType,omitempty"`
-	RealmID       string `json:"realmId,omitempty"`
-	ResourceType  string `json:"resourceType,omitempty"`
-	ResourcePath  string `json:"resourcePath,omitempty"`
-	AuthClientID  string `json:"authClientId,omitempty"`
-	AuthUserID    string `json:"authUserId,omitempty"`
-}
-
-// AuthFlowInfo contains safe authentication flow metadata.
-type AuthFlowInfo struct {
-	ID          string `json:"id"`
-	Alias       string `json:"alias,omitempty"`
-	Description string `json:"description,omitempty"`
-	ProviderID  string `json:"providerId,omitempty"`
-	TopLevel    bool   `json:"topLevel"`
-	BuiltIn     bool   `json:"builtIn"`
-}
-
-// FlowExecutionInfo contains safe authentication flow execution metadata.
-type FlowExecutionInfo struct {
-	ID                 string `json:"id"`
-	DisplayName        string `json:"displayName,omitempty"`
-	Alias              string `json:"alias,omitempty"`
-	ProviderID         string `json:"providerId,omitempty"`
-	Requirement        string `json:"requirement,omitempty"`
-	Level              int    `json:"level"`
-	Index              int    `json:"index"`
-	AuthenticationFlow bool   `json:"authenticationFlow"`
-	Configurable       bool   `json:"configurable"`
-}
-
-// RequiredActionInfo contains safe required-action metadata.
-type RequiredActionInfo struct {
-	Alias         string `json:"alias"`
-	Name          string `json:"name,omitempty"`
-	ProviderID    string `json:"providerId,omitempty"`
-	Enabled       bool   `json:"enabled"`
-	DefaultAction bool   `json:"defaultAction"`
-	Priority      int32  `json:"priority"`
-}
-
-// IdentityProviderInfo contains safe identity provider metadata (never exposes Config secrets).
-type IdentityProviderInfo struct {
-	Alias       string `json:"alias"`
-	InternalID  string `json:"internalId,omitempty"`
-	DisplayName string `json:"displayName,omitempty"`
-	ProviderID  string `json:"providerId,omitempty"`
-	Enabled     bool   `json:"enabled"`
-	TrustEmail  bool   `json:"trustEmail"`
-	LinkOnly    bool   `json:"linkOnly"`
-}
-
-// OrganizationInfo contains safe Keycloak 26+ organization metadata.
-type OrganizationInfo struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name,omitempty"`
-	Alias       string   `json:"alias,omitempty"`
-	Description string   `json:"description,omitempty"`
-	Enabled     bool     `json:"enabled"`
-	Domains     []string `json:"domains,omitempty"`
-}
-
-// OrganizationMember contains safe member metadata for an organization.
-type OrganizationMember struct {
-	User
-	MembershipType string `json:"membershipType,omitempty"`
+	// Fine-Grained Authorization Services
+	GetResourceServer(context.Context, string, string, string) (*gocloak.ResourceServerRepresentation, error)
+	GetResources(context.Context, string, string, string, gocloak.GetResourceParams) ([]*gocloak.ResourceRepresentation, error)
+	GetResource(context.Context, string, string, string, string) (*gocloak.ResourceRepresentation, error)
+	GetScopes(context.Context, string, string, string, gocloak.GetScopeParams) ([]*gocloak.ScopeRepresentation, error)
+	GetScope(context.Context, string, string, string, string) (*gocloak.ScopeRepresentation, error)
+	GetPolicies(context.Context, string, string, string, gocloak.GetPolicyParams) ([]*gocloak.PolicyRepresentation, error)
+	GetPolicy(context.Context, string, string, string, string) (*gocloak.PolicyRepresentation, error)
+	GetPermissions(context.Context, string, string, string, gocloak.GetPermissionParams) ([]*gocloak.PermissionRepresentation, error)
+	GetPermission(context.Context, string, string, string, string) (*gocloak.PermissionRepresentation, error)
+	GetAuthorizationPolicyAssociatedPolicies(context.Context, string, string, string, string) ([]*gocloak.PolicyRepresentation, error)
+	GetAuthorizationPolicyResources(context.Context, string, string, string, string) ([]*gocloak.PolicyResourceRepresentation, error)
+	GetAuthorizationPolicyScopes(context.Context, string, string, string, string) ([]*gocloak.PolicyScopeRepresentation, error)
 }

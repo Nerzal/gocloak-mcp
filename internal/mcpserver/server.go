@@ -36,6 +36,10 @@ type countOutput struct {
 	Count int `json:"count"`
 }
 
+type count64Output struct {
+	Count int64 `json:"count"`
+}
+
 type toolDeps struct {
 	service     Service
 	timeout     time.Duration
@@ -65,6 +69,9 @@ func New(service Service, timeout time.Duration, logger *slog.Logger) *mcp.Serve
 	registerGroupTools(server, deps)
 	registerRealmTools(server, deps)
 	registerAuthIDPOrgTools(server, deps)
+	registerOrganizationTools(server, deps)
+	registerComponentTools(server, deps)
+	registerAuthzTools(server, deps)
 	return server
 }
 
