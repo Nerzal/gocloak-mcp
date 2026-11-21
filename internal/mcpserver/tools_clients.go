@@ -49,10 +49,10 @@ func registerClientCoreTools(server *mcp.Server, deps toolDeps) {
 		Name:        "list_clients",
 		Description: "List clients in a Keycloak realm.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listClientsInput) (*mcp.CallToolResult, clientsOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listClientsInput) (*mcp.CallToolResult, any, error) {
 		first, maxSize, err := validatePage(in.pageInput)
 		if err != nil {
-			return nil, clientsOutput{}, err
+			return nil, nil, err
 		}
 		return executeTool(ctx, deps, "list_clients", func(rCtx context.Context) (clientsOutput, error) {
 			clients, callErr := deps.service.ListClients(rCtx, in.Realm, first, maxSize, keycloak.ClientFilter{ClientID: in.ClientID})
@@ -64,7 +64,7 @@ func registerClientCoreTools(server *mcp.Server, deps toolDeps) {
 		Name:        "get_client",
 		Description: "Get safe metadata for a single Keycloak client by UUID.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in clientUUIDInput) (*mcp.CallToolResult, keycloak.ClientInfo, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in clientUUIDInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "get_client", func(rCtx context.Context) (keycloak.ClientInfo, error) {
 			res, callErr := deps.service.GetClient(rCtx, in.Realm, in.ClientUUID)
 			return res, sanitizeErr(callErr)
@@ -75,7 +75,7 @@ func registerClientCoreTools(server *mcp.Server, deps toolDeps) {
 		Name:        "get_client_service_account",
 		Description: "Get the service-account user associated with a Keycloak client.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in clientUUIDInput) (*mcp.CallToolResult, keycloak.User, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in clientUUIDInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "get_client_service_account", func(rCtx context.Context) (keycloak.User, error) {
 			res, callErr := deps.service.GetClientServiceAccount(rCtx, in.Realm, in.ClientUUID)
 			return res, sanitizeErr(callErr)
@@ -88,10 +88,10 @@ func registerClientRoleAndScopeTools(server *mcp.Server, deps toolDeps) {
 		Name:        "list_client_roles",
 		Description: "List roles defined on a Keycloak client.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listClientRolesInput) (*mcp.CallToolResult, rolesOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listClientRolesInput) (*mcp.CallToolResult, any, error) {
 		first, maxSize, err := validatePage(in.pageInput)
 		if err != nil {
-			return nil, rolesOutput{}, err
+			return nil, nil, err
 		}
 		return executeTool(ctx, deps, "list_client_roles", func(rCtx context.Context) (rolesOutput, error) {
 			roles, callErr := deps.service.ListClientRoles(rCtx, in.Realm, in.ClientUUID, first, maxSize, in.Search)
@@ -103,7 +103,7 @@ func registerClientRoleAndScopeTools(server *mcp.Server, deps toolDeps) {
 		Name:        "list_client_scopes",
 		Description: "List client scopes configured in a Keycloak realm.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, clientScopesOutput, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in realmInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "list_client_scopes", func(rCtx context.Context) (clientScopesOutput, error) {
 			scopes, callErr := deps.service.ListClientScopes(rCtx, in.Realm)
 			return clientScopesOutput{ClientScopes: scopes}, sanitizeErr(callErr)
@@ -114,7 +114,7 @@ func registerClientRoleAndScopeTools(server *mcp.Server, deps toolDeps) {
 		Name:        "get_client_scope",
 		Description: "Get a single client scope by UUID.",
 		Annotations: deps.annotations,
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in scopeIDInput) (*mcp.CallToolResult, keycloak.ClientScopeInfo, error) {
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in scopeIDInput) (*mcp.CallToolResult, any, error) {
 		return executeTool(ctx, deps, "get_client_scope", func(rCtx context.Context) (keycloak.ClientScopeInfo, error) {
 			res, callErr := deps.service.GetClientScope(rCtx, in.Realm, in.ScopeID)
 			return res, sanitizeErr(callErr)
