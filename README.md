@@ -33,7 +33,15 @@ secrets when validation fails.
 | `MCP_HTTP_BEARER_TOKEN` | Conditional | — | Optional on loopback; **required (min 32 chars)** when `MCP_HTTP_ADDR` binds to a non-loopback address |
 | `MCP_HTTP_ALLOWED_ORIGINS` | No | Loopback only | Comma-separated additional `Origin` allowlist for browser clients on Streamable HTTP (DNS rebinding protection) |
 
-See [Security & Benchmarks](docs/SECURITY_AND_BENCHMARKS.md) for the full OWASP MCP Top 10 control matrix and Go vs. Java/Python benchmark comparison.
+See [Security & Benchmarks](docs/SECURITY_AND_BENCHMARKS.md) for the full OWASP MCP Top 10 control matrix and reproducible head-to-head benchmarks against other Keycloak MCP servers (`ubuntu-latest`, 4 vCPU, identical local mock Keycloak):
+
+| Server | Transport | Binary / Image | Cold Start | RSS (Load) | Throughput |
+| --- | --- | ---: | ---: | ---: | ---: |
+| **`gocloak-mcp` (Go)** | **Stdio / HTTP** | **10.0 MB / 21.4 MB** | **12.2 ms / 21.8 ms** | **16.3 MB / 19.5 MB** | **955 / 1,195 req/s** |
+| `HaithamOumerzoug/keycloak-mcp` (TS/Node) | Stdio | Node runtime | 68.5 ms | 88.7 MB | 728 req/s |
+| `idoyudha/mcp-keycloak` (Python/FastMCP) | Stdio | Python venv | 359.3 ms | 64.2 MB | 272 req/s |
+| `sshaaf/keycloak-mcp-server` (Quarkus Native) | HTTP | 74.1 MB | 43.2 ms | 158.8 MB | 214 req/s |
+| `sshaaf/keycloak-mcp-server` (Quarkus JVM) | HTTP | 23.4 MB JAR / 626 MB | 1,249.8 ms | 319.9 MB | 252 req/s |
 
 Use your deployment platform's secret manager to provide secrets. Do not put
 credentials in command-line arguments, configuration files, or logs.

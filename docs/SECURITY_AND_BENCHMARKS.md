@@ -44,16 +44,42 @@ End-to-end MCP JSON-RPC (`BenchmarkInMemoryMCPCallListUsers`) and Streamable HTT
 
 ---
 
-## 3. Comparison with Java & Python MCP Servers
+## 3. Head-to-Head Comparison vs. Competing Keycloak MCP Servers
 
-In independent multi-language MCP server benchmarks (**TM Dev Lab 2026**, 3.9M requests across Go official SDK, Java Spring/Quarkus, Node.js, and Python FastMCP) and typical Keycloak MCP deployments:
+All servers were benchmarked head-to-head on the same machine (`ubuntu-latest`, 4 vCPU `x86_64`, Linux 7.0) against an identical local mock Keycloak Admin API returning 50 users per `list_users` call. The benchmark harness is fully reproducible in [`benchmarks/run_benchmarks.py`](../benchmarks/run_benchmarks.py) and automated via [`.github/workflows/benchmark.yml`](../.github/workflows/benchmark.yml) (`workflow_dispatch`).
 
-| Dimension | `gocloak-mcp` (Go) | Java (Quarkus JVM / Spring) | Java (Quarkus Native) | Python (FastMCP) |
+### Stdio Transport (Local IDE / Agent: Claude Desktop, Cursor, VS Code, Claude Code)
+
+Measured across 5 cold starts (`initialize` + `tools/list`) and 100 sequential `tools/call` (`list_users` / `list-users`) requests after 10 warm-up calls:
+
+| Server | Runtime / Binary | Cold Start (median) | RSS Idle → Load | p50 Latency | p95 Latency | p99 Latency | Throughput |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **`gocloak-mcp` (`v0.2.0`, Go)** | **10.0 MB static binary** | **12.2 ms** | **15.3 → 16.3 MB** | **1.06 ms** | **1.30 ms** | **1.47 ms** | **954.7 req/s** |
+| [`HaithamOumerzoug/keycloak-mcp`](https://github.com/HaithamOumerzoug/keycloak-mcp) (`1.2.5`, TypeScript/Node 22) | Node.js 22 + `node_modules` | 68.5 ms *(5.6×)* | 64.1 → 88.7 MB *(5.4×)* | 1.23 ms | 2.20 ms | 2.42 ms | 728.2 req/s |
+| [`idoyudha/mcp-keycloak`](https://github.com/idoyudha/mcp-keycloak) (`v1.2.2`, Python 3.12/FastMCP) | Python 3.12 + venv | 359.3 ms *(29.5×)* | 61.0 → 64.2 MB *(3.9×)* | 3.66 ms | 3.92 ms | 4.01 ms | 271.5 req/s *(3.5× slower)* |
+
+### Streamable HTTP Transport (Remote / Kubernetes / Server)
+
+Measured across 3 cold starts to ready `/mcp` `initialize` and 300 concurrent `tools/call` (`list_users` / `GET_USERS`) requests at concurrency 10 after 20 warm-up calls:
+
+| Server | Binary / OCI Image | Cold Start (median) | RSS Idle → Load | p50 Latency | p95 Latency | p99 Latency | Throughput |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| **`gocloak-mcp` (`v0.2.0`, Go)** | **10.0 MB / 21.4 MB** | **21.8 ms** | **14.4 → 19.5 MB** | **7.46 ms** | **13.13 ms** | **15.24 ms** | **1,194.9 req/s** |
+| [`sshaaf/keycloak-mcp-server`](https://github.com/sshaaf/keycloak-mcp-server) (`v0.4.0`, Java/Quarkus Native) | 74.1 MB binary | 43.2 ms *(2.0×)* | 71.6 → 158.8 MB *(8.1×)* | 9.83 ms | 22.21 ms | 27.77 ms | 214.1 req/s *(5.6× slower)* |
+| [`sshaaf/keycloak-mcp-server`](https://github.com/sshaaf/keycloak-mcp-server) (`v0.4.0`, Java/Quarkus JVM) | 23.4 MB JAR / 626 MB img | 1,249.8 ms *(57.3×)* | 196.7 → 319.9 MB *(16.4×)* | 35.60 ms | 72.44 ms | 92.31 ms | 251.8 req/s *(4.7× slower)* |
+
+### Security & Operational Footprint Comparison
+
+| Capability | `gocloak-mcp` (Go) | `sshaaf/keycloak-mcp-server` (Java) | `HaithamOumerzoug/keycloak-mcp` (TS) | `idoyudha/mcp-keycloak` (Python) |
 | --- | --- | --- | --- | --- |
-| **Runtime & Distribution** | Single static binary (`CGO_ENABLED=0`, distroless ~15–20 MB) | JRE + JAR (~250–350 MB image) | Native binary (~80–120 MB, 3–5 min build) | CPython + venv (~150–250 MB image) |
-| **Cold Start** | **~5–15 ms** | ~2–5 s (JVM warm-up) | ~50–100 ms | ~300–800 ms |
-| **Idle / Steady Memory (RSS)** | **~15–25 MB** | ~195–230 MB (~10–12× Go) | ~40–70 MB | ~60–100 MB |
-| **Protocol Throughput (RPS)** | **~1,624 RPS** (0.86 ms avg) | ~1,624 RPS (0.84 ms avg) | ~1,400–1,600 RPS | ~292 RPS (26.5 ms avg — **~31× slower** latency) |
-| **Build Time** | **~2–5 s** | ~30–60 s | ~3–5 min | N/A (interpreted) |
+| **Transports** | **Stdio + Streamable HTTP** | Streamable HTTP / SSE | Stdio | Stdio + HTTP |
+| **Default Access Model** | **Strictly read-only (32 tools)** | Read + Write (178 ops) | Read + Write/Delete | Read + Write/Delete |
+| **Auth Model** | **OAuth2 Client Credentials (least-privilege service account)** | User JWT / OIDC | Master admin username + password | Username + password / client secret |
+| **Multi-Realm Allowlist** | **Yes (`KEYCLOAK_ALLOWED_REALMS`)** | No | No | No |
+| **OWASP MCP Top 10 Test Suite** | **Yes (10/10 automated)** | No | No | No |
+| **OCI Image Size** | **21.4 MB (distroless nonroot)** | 626 MB (UBI9 OpenJDK 21) | — | — |
+| **Distribution** | **GitHub Releases (6 platforms), Homebrew Cask, GHCR, MCP Registry** | GitHub Releases, Quay.io | npm / source | PyPI / source |
 
-**Key takeaway:** Go matches Java's sub-millisecond MCP protocol latency and throughput (~5.5× higher RPS and ~30× lower latency than Python FastMCP) while using **~10× less RAM than JVM Java**, starting in milliseconds (critical for Stdio MCP servers spawned on-demand by IDEs/agents), and building in seconds into a minimal distroless static image.
+**Key takeaways:**
+- **5.6× faster cold start** and **5.4× less RAM** than TypeScript/Node (`HaithamOumerzoug/keycloak-mcp`), and **29.5× faster cold start** / **3.5× higher throughput** than Python/FastMCP (`idoyudha/mcp-keycloak`) over Stdio.
+- **5.6× higher HTTP throughput**, **8.1× less RAM**, and a **7.4× smaller binary** than Java/Quarkus GraalVM Native (`sshaaf/keycloak-mcp-server`), and **57× faster cold start**, **16.4× less RAM**, and a **29× smaller container image** (21.4 MB vs. 626 MB) than Quarkus JVM.
