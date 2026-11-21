@@ -83,7 +83,7 @@ func serveHTTP(ctx context.Context, server *mcp.Server, cfg *config.Config, logg
 }
 
 func newKeycloakClient(cfg *config.Config) *gocloak.GoCloak {
-	client := gocloak.NewClient(cfg.KeycloakURL)
+	client := gocloak.NewClient(cfg.KeycloakURL, gocloak.SetDirectBodyRead())
 	client.RestyClient().GetClient().CheckRedirect = rejectRedirects
 	client.RestyClient().
 		SetTimeout(cfg.RequestTimeout).
